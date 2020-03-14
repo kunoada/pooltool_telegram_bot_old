@@ -190,7 +190,7 @@ def get_livestats(pool_id):
 
 def update_livestats(pool_id):
     data = get_livestats(pool_id)
-    if data == '':
+    if data == '' and 'livestake' not in data and 'epochblock' not in data and 'lastBlockEpoch' not in data:
         return (0, 0, 0)
     return (round(int(data['livestake'])/1000000), data['epochblocks'], data['lastBlockEpoch'])
 
