@@ -78,13 +78,23 @@ def handle_updates(updates):
         chat = update["message"]["chat"]["id"]
         tickers = db.get_tickers(chat)
         if text == "/DELETE":
-            keyboard = build_keyboard(tickers)
-            send_message("Select an item to delete", chat, keyboard)
+            if tickers:
+                keyboard = build_keyboard(tickers)
+                send_message("Select an item to delete", chat, keyboard)
+            send_message("No TICKERs added", chat)
         elif text == "/START":
-            send_message("Welcome to your personal stakepool notifier!\n"
-                         "Please enter a TICKER of the pool you want to follow\n"
-                         "\n"
-                         "Example: KUNO", chat)
+            message = "Welcome to PoolTool Bot!\n" \
+                      "\n" \
+                      "Please enter the TICKER of the pool(s) you want to follow\n" \
+                      "\n" \
+                      "Example: KUNO\n" \
+                      "\n" \
+                      "In order to remove a TICKER from the list, you have two options:\n" \
+                      "1. Enter the TICKER again\n" \
+                      "2. Enter \"/DELETE\" to get a list with possible TICKERs to delete\n" \
+                      "\n" \
+                      "This pooltool bot was created for pooltool by KUNO stakepool"
+            send_message(message, chat)
         elif text.startswith("/"):
             continue
         elif 3 > len(text) or len(text) > 5:
@@ -323,20 +333,34 @@ def delete_aws_event_from_queue(receipt_handle):
 
 
 def handle_battle(data):
+    def what_battle_type(players):
+        slot_check = ''
+        for player in players:
+            if slot_check == '':
+                slot_check = player['slot']
+            else:
+                if slot_check != player['slot']:
+                    return 'Height'
+        return 'Slot'
+
+    players = data['players']
+    battle_type = what_battle_type(players)
     for player in data['players']:
         if player['pool'] == data['winner']:
             chat_ids = db.get_chat_ids_from_poolid(player['pool'])
             for chat_id in chat_ids:
                 ticker = db.get_ticker_from_poolid(player['pool'])[0]
                 message = f'{ticker}\n' \
-                          f'{swords}Battle! You won! {throphy}'
+                          f'{swords}{battle_type} battle! You won! {throphy}\n' \
+                          f'https://pooltool.io/competitive'
                 send_message(message, chat_id)
         else:
             chat_ids = db.get_chat_ids_from_poolid(player['pool'])
             for chat_id in chat_ids:
                 ticker = db.get_ticker_from_poolid(player['pool'])[0]
                 message = f'{ticker}\n' \
-                          f'{swords}Battle! You lost! {annoyed}'
+                          f'{swords}{battle_type} battle! You lost! {annoyed}\n' \
+                          f'https://pooltool.io/competitive'
                 send_message(message, chat_id)
 
 
@@ -385,7 +409,9 @@ def handle_block_adjustment(data):
         ticker = db.get_ticker_from_poolid(pool_id)[0]
         message = f'{ticker}\n' \
                   f'{warning}Block adjustment{warning}\n' \
-                  f"Total blocks this epoch has changed from {data['old_epoch_blocks']} to {data['new_epoch_blocks']}"
+                  f"Total blocks this epoch has changed from {data['old_epoch_blocks']} to {data['new_epoch_blocks']}\n" \
+                  f"More info:\n" \
+                  f"https://pooltool.io/"
         send_message(message, chat_id)
         db.update_blocks_minted(chat_id, ticker, data['new_epoch_blocks'])
 
@@ -395,7 +421,7 @@ def handle_sync_change(data):
     chat_ids = db.get_chat_ids_from_poolid(pool_id)
     for chat_id in chat_ids:
         ticker = db.get_ticker_from_poolid(pool_id)[0]
-        if data['new_status']:
+        if not data['new_status']:
             message = f'{ticker}\n' \
                       f'{alert}Pool is out of sync{alert}'
             send_message(message, chat_id)
@@ -422,7 +448,7 @@ def check_for_new_epoch():
                           f'\n' \
                           f'💰Live stake {si_format(delegations, precision=2)}\n' \
                           f'⛏Blocks minted: {blocks_minted}\n' \
-                          f'⚔Battles: {wins}/{wins + losses}\n' \
+                          f'⚔Slot battles: {wins}/{wins + losses}\n' \
                           f'\n' \
                           f'Stakers rewards {si_format(rewards_stakers/1000000, precision=2)}\n' \
                           f'Tax rewards {si_format(rewards_tax / 1000000, precision=2)}'
@@ -461,7 +487,7 @@ def start_telegram_notifier():
                 handle_block_adjustment(data)
                 continue
             elif body['type'] == 'sync_change':
-                handle_stake_change(data)
+                handle_sync_change(data)
                 continue
 
         if time.time() - periodic_new_epoch_check > 10*60: # Check every 10 min
