@@ -34,6 +34,10 @@ annoyed = '😤'
 warning = '⚠'
 alert = '‼'
 like = '👍'
+link = '🔗'
+globe = '🌐'
+tools = '🛠'
+chains = '⛓'
 
 
 def get_url(url):
@@ -84,7 +88,7 @@ def handle_updates(updates):
             keyboard = build_keyboard(tickers)
             send_message("Select an item to delete", chat, keyboard)
         elif text == "/START":
-            message = "Welcome to PoolTool Bot!\n" \
+            message = f"{globe}Welcome to PoolTool Bot!{globe}\n" \
                       "\n" \
                       "Please enter the TICKER of the pool(s) you want to follow\n" \
                       "\n" \
@@ -190,7 +194,7 @@ def get_livestats(pool_id):
 
 def update_livestats(pool_id):
     data = get_livestats(pool_id)
-    if data == '' and 'livestake' not in data and 'epochblock' not in data and 'lastBlockEpoch' not in data:
+    if data == '' or 'livestake' not in data or 'epochblock' not in data or 'lastBlockEpoch' not in data:
         return (0, 0, 0)
     return (round(int(data['livestake'])/1000000), data['epochblocks'], data['lastBlockEpoch'])
 
@@ -411,7 +415,8 @@ def handle_block_minted(data):
         ticker = db.get_ticker_from_poolid(pool_id)[0]
         message = f'{ticker}\n' \
                   f'\n' \
-                  f'{pickaxe}New block minted! Total blocks minted this epoch: {nbe}'
+                  f'{fire}New block created!{fire}\n' \
+                  f'{tools}Total blocks minted this epoch: {nbe}'
         send_message(message, chat_id)
         db.update_blocks_minted(chat_id, ticker, nbe)
 
@@ -478,11 +483,11 @@ def check_for_new_epoch():
                 rewards_stakers, rewards_tax = update_rewards(pool_id, current_epoch)
                 message = f'{ticker}\n' \
                           f'\n' \
-                          f'🔥Epoch {current_epoch} stats:🔥\n' \
+                          f'{globe}Epoch {current_epoch} stats:{globe}\n' \
                           f'\n' \
-                          f'💰Live stake {si_format(delegations, precision=2)}\n' \
-                          f'⛏Blocks minted: {blocks_minted}\n' \
-                          f'⚔Slot battles: {wins}/{wins + losses}\n' \
+                          f'{moneyBag}Live stake {si_format(delegations, precision=2)}\n' \
+                          f'{tools}Blocks created: {blocks_minted}\n' \
+                          f'{swords}Slot battles: {wins}/{wins + losses}\n' \
                           f'\n' \
                           f'Stakers rewards {si_format(rewards_stakers/1000000, precision=2)}\n' \
                           f'Tax rewards {si_format(rewards_tax / 1000000, precision=2)}\n' \
