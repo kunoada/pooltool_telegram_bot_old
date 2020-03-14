@@ -78,10 +78,11 @@ def handle_updates(updates):
         chat = update["message"]["chat"]["id"]
         tickers = db.get_tickers(chat)
         if text == "/DELETE":
-            if tickers:
-                keyboard = build_keyboard(tickers)
-                send_message("Select an item to delete", chat, keyboard)
-            send_message("No TICKERs added", chat)
+            if not tickers:
+                send_message("No TICKERs added", chat)
+                continue
+            keyboard = build_keyboard(tickers)
+            send_message("Select an item to delete", chat, keyboard)
         elif text == "/START":
             message = "Welcome to PoolTool Bot!\n" \
                       "\n" \
