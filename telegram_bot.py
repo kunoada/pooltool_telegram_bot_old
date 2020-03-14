@@ -344,6 +344,7 @@ def handle_battle(data):
         return 'Slot'
 
     players = data['players']
+    height = data['height']
     battle_type = what_battle_type(players)
     for player in data['players']:
         if player['pool'] == data['winner']:
@@ -351,7 +352,10 @@ def handle_battle(data):
             for chat_id in chat_ids:
                 ticker = db.get_ticker_from_poolid(player['pool'])[0]
                 message = f'{ticker}\n' \
-                          f'{swords}{battle_type} battle! You won! {throphy}\n' \
+                          f'{swords}{battle_type} battle!\n' \
+                          f'At height: {height}\n' \
+                          f'...\n' \
+                          f'You won! {throphy}\n' \
                           f'https://pooltool.io/competitive'
                 send_message(message, chat_id)
         else:
@@ -360,6 +364,8 @@ def handle_battle(data):
                 ticker = db.get_ticker_from_poolid(player['pool'])[0]
                 message = f'{ticker}\n' \
                           f'{swords}{battle_type} battle! You lost! {annoyed}\n' \
+                          f'At height: {height}\n' \
+                          f'...\n' \
                           f'https://pooltool.io/competitive'
                 send_message(message, chat_id)
 
