@@ -169,6 +169,14 @@ def get_pool_id_from_ticker_url(ticker):
     return ''
 
 
+def get_ticker_from_pool_id(pool_id):
+    with open('tickers.json', 'r') as ticker_file:
+        tickers = json.load(ticker_file)
+    if pool_id in tickers['tickers']:
+        return tickers['tickers'][pool_id]
+    return 'UNKNOWN'
+
+
 def get_livestats(pool_id):
     url_livestats = f'https://pooltool.s3-us-west-2.amazonaws.com/8e4d2a3/pools/{pool_id}/livestats.json'
     try:
@@ -343,9 +351,16 @@ def handle_battle(data):
                     return 'Height'
         return 'Slot'
 
+    def who_battled(players):
+        tickers = []
+        for player in players:
+            tickers.append(get_ticker_from_pool_id(player['pool']))
+        return ' vs '.join(tickers)
+
     players = data['players']
     height = data['height']
     battle_type = what_battle_type(players)
+    competitors = who_battled(players)
     for player in data['players']:
         if player['pool'] == data['winner']:
             chat_ids = db.get_chat_ids_from_poolid(player['pool'])
@@ -354,6 +369,7 @@ def handle_battle(data):
                 message = f'{ticker}\n' \
                           f'{swords}{battle_type} battle!\n' \
                           f'At height: {height}\n' \
+                          f'{competitors}' \
                           f'...\n' \
                           f'You won! {throphy}\n' \
                           f'https://pooltool.io/competitive'
@@ -363,9 +379,11 @@ def handle_battle(data):
             for chat_id in chat_ids:
                 ticker = db.get_ticker_from_poolid(player['pool'])[0]
                 message = f'{ticker}\n' \
-                          f'{swords}{battle_type} battle! You lost! {annoyed}\n' \
+                          f'{swords}{battle_type} battle!\n' \
                           f'At height: {height}\n' \
+                          f'{competitors}' \
                           f'...\n' \
+                          f'You lost! {annoyed}' \
                           f'https://pooltool.io/competitive'
                 send_message(message, chat_id)
 
