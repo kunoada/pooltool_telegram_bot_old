@@ -74,60 +74,62 @@ def get_last_update_id(updates):
 
 
 def handle_updates(updates):
-    for update in updates["result"]:
-        print(update)
-        if 'text' not in update["message"]:
-            continue
-        text = update["message"]["text"].upper()
-        chat = update["message"]["chat"]["id"]
-        tickers = db.get_tickers(chat)
-        if text == "/DELETE":
-            if not tickers:
-                send_message("No TICKERs added", chat)
-                continue
-            keyboard = build_keyboard(tickers)
-            send_message("Select an item to delete", chat, keyboard)
-        elif text == "/START":
-            message = f"{globe}Welcome to PoolTool Bot!{globe}\n" \
-                      "\n" \
-                      "Please enter the TICKER of the pool(s) you want to follow\n" \
-                      "\n" \
-                      "Example: KUNO\n" \
-                      "\n" \
-                      "In order to remove a TICKER from the list, you have two options:\n" \
-                      "1. Enter the TICKER again\n" \
-                      "2. Enter \"/DELETE\" to get a list with possible TICKERs to delete\n" \
-                      "\n" \
-                      "This pooltool bot was created for pooltool by KUNO stakepool"
-            send_message(message, chat)
-        elif text.startswith("/"):
-            continue
-        elif 3 > len(text) or len(text) > 5:
-            message = "A TICKER needs to be between 3-5 letters!"
-            send_message(message, chat)
-        elif text in tickers:
-            db.delete_item(chat, text)
-            tickers = db.get_tickers(chat)
-            message = "List of pools you watch:\n\n" + "\n".join(tickers)
-            send_message(message, chat)
-        else:
-            pool_id = get_pool_id_from_ticker_file(text)
-            if pool_id == '':
-                pool_id = get_pool_id_from_ticker_url(text)
-            if pool_id == '':
-                message = "This is not a valid TICKER!"
-                send_message(message, chat)
-                continue
-            elif pool_id == 'error':
-                message = "There was an error, please try again"
-                send_message(message, chat)
-                continue
-            db.add_item(chat, text)
-            data = update_livestats(pool_id)
-            db.update_items(chat, text, pool_id, data[0], data[1])
-            tickers = db.get_tickers(chat)
-            message = "List of pools you watch:\n\n" + "\n".join(tickers)
-            send_message(message, chat)
+    if 'result' in updates:
+        for update in updates["result"]:
+            if 'message' in update:
+                print(update)
+                if 'text' not in update["message"]:
+                    continue
+                text = update["message"]["text"].upper()
+                chat = update["message"]["chat"]["id"]
+                tickers = db.get_tickers(chat)
+                if text == "/DELETE":
+                    if not tickers:
+                        send_message("No TICKERs added", chat)
+                        continue
+                    keyboard = build_keyboard(tickers)
+                    send_message("Select an item to delete", chat, keyboard)
+                elif text == "/START":
+                    message = f"{globe}Welcome to PoolTool Bot!{globe}\n" \
+                              "\n" \
+                              "Please enter the TICKER of the pool(s) you want to follow\n" \
+                              "\n" \
+                              "Example: KUNO\n" \
+                              "\n" \
+                              "In order to remove a TICKER from the list, you have two options:\n" \
+                              "1. Enter the TICKER again\n" \
+                              "2. Enter \"/DELETE\" to get a list with possible TICKERs to delete\n" \
+                              "\n" \
+                              "This pooltool bot was created for pooltool by KUNO stakepool"
+                    send_message(message, chat)
+                elif text.startswith("/"):
+                    continue
+                elif 3 > len(text) or len(text) > 5:
+                    message = "A TICKER needs to be between 3-5 letters!"
+                    send_message(message, chat)
+                elif text in tickers:
+                    db.delete_item(chat, text)
+                    tickers = db.get_tickers(chat)
+                    message = "List of pools you watch:\n\n" + "\n".join(tickers)
+                    send_message(message, chat)
+                else:
+                    pool_id = get_pool_id_from_ticker_file(text)
+                    if pool_id == '':
+                        pool_id = get_pool_id_from_ticker_url(text)
+                    if pool_id == '':
+                        message = "This is not a valid TICKER!"
+                        send_message(message, chat)
+                        continue
+                    elif pool_id == 'error':
+                        message = "There was an error, please try again"
+                        send_message(message, chat)
+                        continue
+                    db.add_item(chat, text)
+                    data = update_livestats(pool_id)
+                    db.update_items(chat, text, pool_id, data[0], data[1])
+                    tickers = db.get_tickers(chat)
+                    message = "List of pools you watch:\n\n" + "\n".join(tickers)
+                    send_message(message, chat)
 
 
 def get_last_chat_id_and_text(updates):
@@ -416,7 +418,7 @@ def handle_block_minted(data):
         message = f'{ticker}\n' \
                   f'\n' \
                   f'{fire}New block created!{fire}\n' \
-                  f'{tools}Total blocks minted this epoch: {nbe}'
+                  f'{tools}Total blocks created this epoch: {nbe}'
         send_message(message, chat_id)
         db.update_blocks_minted(chat_id, ticker, nbe)
 
