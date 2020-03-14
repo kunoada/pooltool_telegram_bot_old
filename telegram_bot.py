@@ -384,7 +384,7 @@ def handle_battle(data):
                           f'At height: {height}\n' \
                           f'{competitors}\n' \
                           f'...\n' \
-                          f'You lost! {annoyed}' \
+                          f'You lost! {annoyed}\n' \
                           f'https://pooltool.io/competitive'
                 send_message(message, chat_id)
 
