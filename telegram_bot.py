@@ -281,7 +281,8 @@ def handle_notifier():
                 pool_id , delegations , blocks_minted = db.get_items(chat_id , ticker)
                 wins, losses = update_competitive_win_loss(pool_id, current_epoch)
                 rewards_stakers, rewards_tax = update_rewards(pool_id, current_epoch)
-                message = f'{ticker}\n ' \
+                message = f'{ticker}\n' \
+                          f'\n' \
                           f'🔥Epoch {current_epoch} stats:🔥\n' \
                           f'\n' \
                           f'💰Live stake {si_format(delegations, precision=2)}\n' \
@@ -309,9 +310,10 @@ def start_telegram_update_handler():
     while True:
         updates = get_updates(last_update_id)
         if updates is not None:
-            if len(updates["result"]) > 0:
-                last_update_id = get_last_update_id(updates) + 1
-                handle_updates(updates)
+            if updates['ok']:
+                if len(updates["result"]) > 0:
+                    last_update_id = get_last_update_id(updates) + 1
+                    handle_updates(updates)
         time.sleep(0.5)
 
 
@@ -368,6 +370,7 @@ def handle_battle(data):
             for chat_id in chat_ids:
                 ticker = db.get_ticker_from_poolid(player['pool'])[0]
                 message = f'{ticker}\n' \
+                          f'\n' \
                           f'{swords}{battle_type} battle!\n' \
                           f'At height: {height}\n' \
                           f'{competitors}\n' \
@@ -380,6 +383,7 @@ def handle_battle(data):
             for chat_id in chat_ids:
                 ticker = db.get_ticker_from_poolid(player['pool'])[0]
                 message = f'{ticker}\n' \
+                          f'\n' \
                           f'{swords}{battle_type} battle!\n' \
                           f'At height: {height}\n' \
                           f'{competitors}\n' \
@@ -406,6 +410,7 @@ def handle_block_minted(data):
     for chat_id in chat_ids:
         ticker = db.get_ticker_from_poolid(pool_id)[0]
         message = f'{ticker}\n' \
+                  f'\n' \
                   f'{pickaxe}New block minted! Total blocks minted this epoch: {nbe}'
         send_message(message, chat_id)
         db.update_blocks_minted(chat_id, ticker, nbe)
@@ -433,6 +438,7 @@ def handle_block_adjustment(data):
     for chat_id in chat_ids:
         ticker = db.get_ticker_from_poolid(pool_id)[0]
         message = f'{ticker}\n' \
+                  f'\n' \
                   f'{warning}Block adjustment{warning}\n' \
                   f"Total blocks this epoch has changed from {data['old_epoch_blocks']} to {data['new_epoch_blocks']}\n" \
                   f"More info:\n" \
@@ -448,10 +454,12 @@ def handle_sync_change(data):
         ticker = db.get_ticker_from_poolid(pool_id)[0]
         if not data['new_status']:
             message = f'{ticker}\n' \
+                      f'\n' \
                       f'{alert}Pool is out of sync{alert}'
             send_message(message, chat_id)
         else:
             message = f'{ticker}\n' \
+                      f'\n' \
                       f'{like}Pool is back in sync{like}'
             send_message(message, chat_id)
 
@@ -468,7 +476,8 @@ def check_for_new_epoch():
                 pool_id , delegations , blocks_minted = db.get_items(chat_id , ticker)
                 wins, losses = update_competitive_win_loss(pool_id, current_epoch)
                 rewards_stakers, rewards_tax = update_rewards(pool_id, current_epoch)
-                message = f'{ticker}\n ' \
+                message = f'{ticker}\n' \
+                          f'\n' \
                           f'🔥Epoch {current_epoch} stats:🔥\n' \
                           f'\n' \
                           f'💰Live stake {si_format(delegations, precision=2)}\n' \
@@ -476,7 +485,10 @@ def check_for_new_epoch():
                           f'⚔Slot battles: {wins}/{wins + losses}\n' \
                           f'\n' \
                           f'Stakers rewards {si_format(rewards_stakers/1000000, precision=2)}\n' \
-                          f'Tax rewards {si_format(rewards_tax / 1000000, precision=2)}'
+                          f'Tax rewards {si_format(rewards_tax / 1000000, precision=2)}\n' \
+                          f'\n' \
+                          f'More info at:\n' \
+                          f'https://pooltool.io/pool/{pool_id}/'
                 send_message(message , chat_id)
         current_epoch = epoch
 
