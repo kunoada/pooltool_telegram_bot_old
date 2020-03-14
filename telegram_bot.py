@@ -370,7 +370,7 @@ def handle_battle(data):
                 message = f'{ticker}\n' \
                           f'{swords}{battle_type} battle!\n' \
                           f'At height: {height}\n' \
-                          f'{competitors}' \
+                          f'{competitors}\n' \
                           f'...\n' \
                           f'You won! {throphy}\n' \
                           f'https://pooltool.io/competitive'
@@ -382,7 +382,7 @@ def handle_battle(data):
                 message = f'{ticker}\n' \
                           f'{swords}{battle_type} battle!\n' \
                           f'At height: {height}\n' \
-                          f'{competitors}' \
+                          f'{competitors}\n' \
                           f'...\n' \
                           f'You lost! {annoyed}' \
                           f'https://pooltool.io/competitive'
