@@ -104,32 +104,56 @@ def handle_updates(updates):
                     send_message(message, chat)
                 elif text.startswith("/"):
                     continue
-                elif 3 > len(text) or len(text) > 5:
-                    message = "A TICKER needs to be between 3-5 letters!"
-                    send_message(message, chat)
+                # elif 3 > len(text) or len(text) > 5:
+                #     message = "A TICKER needs to be between 3-5 letters!"
+                #     send_message(message, chat)
                 elif text in tickers:
                     db.delete_item(chat, text)
                     tickers = db.get_tickers(chat)
                     message = "List of pools you watch:\n\n" + "\n".join(tickers)
                     send_message(message, chat)
                 else:
-                    pool_id = get_pool_id_from_ticker_file(text)
-                    if pool_id == '':
-                        pool_id = get_pool_id_from_ticker_url(text)
-                    if pool_id == '':
+                    text = text.split(' ')
+                    pool_id = get_pool_id_from_ticker_file(text[0])
+                    number = 0
+                    # if pool_id is None:
+                    #     pool_id = get_pool_id_from_ticker_url(text)
+                    if pool_id is None:
                         message = "This is not a valid TICKER!"
                         send_message(message, chat)
                         continue
-                    elif pool_id == 'error':
-                        message = "There was an error, please try again"
-                        send_message(message, chat)
-                        continue
+                    elif len(pool_id) > 1:
+                        if len(text) > 1:
+                            try:
+                                number = int(text[1])
+                            except:
+                                message = "Something went wrong!"
+                                send_message(message, chat)
+                                continue
+                        else:
+                            count = 0
+                            pool_ids = ''
+                            for pool in pool_id:
+                                pool_ids = pool_ids + f'{count}. {pool}\n'
+                                count += 1
+                            message = "There's more than one pool with this ticker!\n" \
+                                      "\n" \
+                                      f"{pool_ids}\n" \
+                                      f"Please specify which pool you want listed, eg.\n" \
+                                      f"{text[0]} x, where x is the listing number"
+                            send_message(message, chat)
+                            continue
+                    # elif pool_id == 'error':
+                    #     message = "There was an error, please try again"
+                    #     send_message(message, chat)
+                    #     continue
+                    text = text[0]
                     db.add_item(chat, text)
-                    data = update_livestats(pool_id)
-                    db.update_items(chat, text, pool_id, data[0], data[1])
                     tickers = db.get_tickers(chat)
                     message = "List of pools you watch:\n\n" + "\n".join(tickers)
                     send_message(message, chat)
+                    data = update_livestats(pool_id[number])
+                    db.update_items(chat, text, pool_id[number], data[0], data[1])
 
 
 def get_last_chat_id_and_text(updates):
@@ -157,9 +181,7 @@ def send_message(text, chat_id, reply_markup=None):
 def get_pool_id_from_ticker_file(ticker):
     with open('tickers_reverse.json', 'r') as ticker_file:
         tickers = json.load(ticker_file)
-    if ticker in tickers['tickers']:
-        return tickers['tickers'][ticker]
-    return ''
+    return tickers.get(ticker)
 
 
 def get_pool_id_from_ticker_url(ticker):

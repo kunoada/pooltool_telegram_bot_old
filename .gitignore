@@ -10,3 +10,4 @@ venv*
 token*
 stake_change
 wallet_newpool
+event_log
