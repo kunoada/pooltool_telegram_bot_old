@@ -290,7 +290,7 @@ def handle_notifier():
                 pool_id , delegations , blocks_minted = db.get_items(chat_id , ticker)
                 wins, losses = update_competitive_win_loss(pool_id, current_epoch)
                 rewards_stakers, rewards_tax = update_rewards(pool_id, current_epoch)
-                message = f'{ticker}\n' \
+                message = f'[ {ticker} ]\n' \
                           f'\n' \
                           f'🔥Epoch {current_epoch} stats:🔥\n' \
                           f'\n' \
@@ -410,9 +410,7 @@ def handle_block_minted(data):
     chat_ids = db.get_chat_ids_from_poolid(pool_id)
     for chat_id in chat_ids:
         ticker = db.get_ticker_from_poolid(pool_id)[0]
-        message = f'{ticker}\n' \
-                  f'\n' \
-                  f'{fire}New block created!{fire}\n' \
+        message = f'[ {ticker} ] {fire}New block created!{fire}\n' \
                   f'{tools}Total blocks created this epoch: {nbe}'
         send_message(message, chat_id)
         db.update_blocks_minted(chat_id, ticker, nbe)
@@ -439,9 +437,7 @@ def handle_block_adjustment(data):
     chat_ids = db.get_chat_ids_from_poolid(pool_id)
     for chat_id in chat_ids:
         ticker = db.get_ticker_from_poolid(pool_id)[0]
-        message = f'{ticker}\n' \
-                  f'\n' \
-                  f'{warning}Block adjustment{warning}\n' \
+        message = f'[ {ticker} ] {warning}Block adjustment{warning}\n' \
                   f"Total blocks this epoch has changed from {data['old_epoch_blocks']} to {data['new_epoch_blocks']}\n" \
                   f"More info:\n" \
                   f"https://pooltool.io/"
@@ -455,14 +451,10 @@ def handle_sync_change(data):
     for chat_id in chat_ids:
         ticker = db.get_ticker_from_poolid(pool_id)[0]
         if not data['new_status']:
-            message = f'{ticker}\n' \
-                      f'\n' \
-                      f'{alert}Pool is out of sync{alert}'
+            message = f'[ {ticker} ] {alert}Pool is out of sync{alert}'
             send_message(message, chat_id)
         else:
-            message = f'{ticker}\n' \
-                      f'\n' \
-                      f'{like}Pool is back in sync{like}'
+            message = f'[ {ticker} ] {like}Pool is back in sync{like}'
             send_message(message, chat_id)
 
 
@@ -478,7 +470,7 @@ def check_for_new_epoch():
                 pool_id , delegations , blocks_minted = db.get_items(chat_id , ticker)
                 wins, losses = update_competitive_win_loss(pool_id, current_epoch)
                 rewards_stakers, rewards_tax = update_rewards(pool_id, current_epoch)
-                message = f'{ticker}\n' \
+                message = f'[ {ticker} ]\n' \
                           f'\n' \
                           f'{globe}Epoch {current_epoch} stats:{globe}\n' \
                           f'\n' \
