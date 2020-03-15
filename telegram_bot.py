@@ -375,26 +375,18 @@ def handle_battle(data):
             chat_ids = db.get_chat_ids_from_poolid(player['pool'])
             for chat_id in chat_ids:
                 ticker = db.get_ticker_from_poolid(player['pool'])[0]
-                message = f'{ticker}\n' \
-                          f'\n' \
-                          f'{swords}{battle_type} battle!\n' \
-                          f'At height: {height}\n' \
+                message = f'[ {ticker} ] You won! {throphy}\n' \
+                          f'{swords}{battle_type} battle at height: {height}\n' \
                           f'{competitors}\n' \
-                          f'...\n' \
-                          f'You won! {throphy}\n' \
                           f'https://pooltool.io/competitive'
                 send_message(message, chat_id)
         else:
             chat_ids = db.get_chat_ids_from_poolid(player['pool'])
             for chat_id in chat_ids:
                 ticker = db.get_ticker_from_poolid(player['pool'])[0]
-                message = f'{ticker}\n' \
-                          f'\n' \
-                          f'{swords}{battle_type} battle!\n' \
-                          f'At height: {height}\n' \
+                message = f'[ {ticker} ] You lost! {annoyed}\n' \
+                          f'{swords}{battle_type} battle at height: {height}\n' \
                           f'{competitors}\n' \
-                          f'...\n' \
-                          f'You lost! {annoyed}\n' \
                           f'https://pooltool.io/competitive'
                 send_message(message, chat_id)
 
