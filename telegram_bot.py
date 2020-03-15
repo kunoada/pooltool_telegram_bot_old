@@ -155,11 +155,10 @@ def send_message(text, chat_id, reply_markup=None):
 
 
 def get_pool_id_from_ticker_file(ticker):
-    with open('tickers.json', 'r') as ticker_file:
+    with open('tickers_reverse.json', 'r') as ticker_file:
         tickers = json.load(ticker_file)
-    for pool_id in tickers['tickers']:
-        if tickers['tickers'][pool_id] == ticker:
-            return pool_id
+    if ticker in tickers['tickers']:
+        return tickers['tickers']
     return ''
 
 
