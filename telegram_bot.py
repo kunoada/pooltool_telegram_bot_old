@@ -158,7 +158,7 @@ def get_pool_id_from_ticker_file(ticker):
     with open('tickers_reverse.json', 'r') as ticker_file:
         tickers = json.load(ticker_file)
     if ticker in tickers['tickers']:
-        return tickers['tickers']
+        return tickers['tickers'][ticker]
     return ''
 
 
