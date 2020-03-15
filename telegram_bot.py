@@ -167,7 +167,8 @@ def get_pool_id_from_ticker_url(ticker):
     url_pool_ids = 'https://pooltool.s3-us-west-2.amazonaws.com/8e4d2a3/tickers.json'
     try:
         r = requests.get(url_pool_ids)
-        data = r.json()
+        if r.ok:
+            data = r.json()
     except requests.exceptions.RequestException as e:
         return 'error'
     for pool_id in data['tickers']:
@@ -188,7 +189,8 @@ def get_livestats(pool_id):
     url_livestats = f'https://pooltool.s3-us-west-2.amazonaws.com/8e4d2a3/pools/{pool_id}/livestats.json'
     try:
         r = requests.get(url_livestats)
-        data = r.json()
+        if r.ok:
+            data = r.json()
     except requests.exceptions.RequestException as e:
         return ''
     return data
@@ -205,7 +207,8 @@ def get_stats():
     url_stats = 'https://pooltool.s3-us-west-2.amazonaws.com/stats/stats.json'
     try:
         r = requests.get(url_stats)
-        data = r.json()
+        if r.ok:
+            data = r.json()
     except requests.exceptions.RequestException as e:
         return ''
     return data
@@ -222,7 +225,8 @@ def get_rewards_data(pool_id, epoch):
     url_rewards = f'https://pooltool.s3-us-west-2.amazonaws.com/8e4d2a3/pools/{pool_id}/rewards_{epoch}.json'
     try:
         r = requests.get(url_rewards)
-        data = r.json()
+        if r.ok:
+            data = r.json()
     except requests.exceptions.RequestException as e:
         return ''
     return data
@@ -492,6 +496,9 @@ def check_for_new_epoch():
         current_epoch = epoch
 
 
+log = open('event_log', 'w')
+
+
 def start_telegram_notifier():
     ## On start init..
     global current_epoch
@@ -501,6 +508,7 @@ def start_telegram_notifier():
     while True:
         event = get_aws_event()
         if event != '':
+            log.write(str(event))
             delete_aws_event_from_queue(event['ReceiptHandle'])
             body = json.loads(event['Body'])
             data = body['data']
