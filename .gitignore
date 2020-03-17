@@ -11,3 +11,5 @@ token*
 stake_change
 wallet_newpool
 event_log
+fake_event
+send_tg_msg
