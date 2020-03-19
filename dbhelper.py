@@ -17,16 +17,17 @@ class DBHelper:
         tblstmt = "CREATE TABLE IF NOT EXISTS users (chat_id integer PRIMARY KEY, username text )"        
         self.conn.execute(tblstmt)
 
-        tblstmt = "CREATE TABLE IF NOT EXISTS pools(pool_id TEXT PRIMARY KEY, ticker TEXT," \
-                  "delegations integer default 0, blocks_minted integer default 0)"
+        tblstmt = "CREATE TABLE IF NOT EXISTS pools(pool_id , ticker TEXT," \
+                  "delegations integer default 0, blocks_minted integer default 0,  \
+                  "PRIMARY KEY (pool_id,ticker))"
         self.conn.execute(tblstmt)
         
-        tblstmt = "CREATE TABLE IF NOT EXISTS user_pool (chat_id integer , pool_id TEXT , block_minted integer default 1, " \
+        tblstmt = "CREATE TABLE IF NOT EXISTS user_pool (chat_id integer , pool_id TEXT ,ticker TEXT , block_minted integer default 1, " \
                   "battle integer default 1 , sync_status integer default 1, block_adjustment integer default 1, "\
                   "stake_change integer default 1," \
-                  "PRIMARY KEY (chat_id,pool_id) " \
+                  "PRIMARY KEY (chat_id,pool_id,ticker) " \
                   "FOREIGN KEY (chat_id) REFERENCES users(chat_id) " \
-                  "FOREIGN KEY (pool_id) REFERENCES pools(pool_id)) "
+                  "FOREIGN KEY (pool_id,ticker) REFERENCES pools(pool_id,ticker)) "
         self.conn.execute(tblstmt)
         self.conn.commit()
 
@@ -102,3 +103,15 @@ class DBHelper:
         args = (pool_id, chat_id, ticker)
         self.conn.execute(stmt, args)
         self.conn.commit()
+        
+   def migrate_db(self):
+       stmt = "insert into users (chat_id) select distinct(chat_id) from items"
+       self.conn.execute(stmt)
+       stmt = "insert into pools (pool_id,ticker) select pool_id,ticker from items"
+       self.conn.execute(stmt)
+       stmt = "insert into pool_user (chat_id,pool_id) select chat_id,pool_id from items"
+       self.conn.execute(stmt)
+        
+    
+       self.conn.commit()
+    
