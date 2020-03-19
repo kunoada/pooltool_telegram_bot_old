@@ -8,11 +8,38 @@ class DBHelper:
         self.conn = sqlite3.connect(dbname, check_same_thread=False)
 
     def setup(self):
-        tblstmt = "CREATE TABLE IF NOT EXISTS items (chat_id integer, ticker text, pool_id text, " \
+        tblstmt = "CREATE TABLE IF NOT EXISTS items (chat_id INTEGER, ticker TEXT, pool_id text, " \
                   "delegations integer default 0 ,blocks_minted integer default 0)"
         itemidx = "CREATE UNIQUE INDEX IF NOT EXISTS itemIndex ON items (chat_id,ticker)"
         self.conn.execute(tblstmt)
         self.conn.execute(itemidx)
+        
+        tblstmt = "CREATE TABLE IF NOT EXISTS users (chat_id integer PRIMARY KEY, username text )"        
+        self.conn.execute(tblstmt)
+        
+        
+        tblstmt = "CREATE TABLE IF NOT EXISTS pools(pool_id TEXT  PRIMARY, ticker TEXT  " \
+                  "delegations integer default 0 ,blocks_minted integer default 0)"         
+        self.conn.execute(tblstmt)
+        
+        tblstmt = "CREATE TABLE IF NOT EXISTS user_pool (chat_id integer , pool_id TEXT , block_minted integer default 1, " \
+                   "battle integer default 1 , sync_status integer default 1, block_adjustment integer default 1, "\
+                   "stake_change integer default 1  " \
+                   "PRIMARY KEY (chat_id,pool_id) " \
+                   "FOREIGN KEY (chat_id) REFERENCES users(chat_id) " \
+                   "FOREIGN KEY (pool_id) REFERENCES pools(pool_id)
+                    )"
+        
+        self.conn.execute(tblstmt)
+        
+        
+        
+        
+        
+        
+    
+    
+        
         
         self.conn.commit()
 
