@@ -13,7 +13,7 @@ from dbhelper import DBHelper
 
 db = DBHelper()
 
-TOKEN = open('token_pooltool', 'r').read()
+TOKEN = open('token', 'r').read()
 URL = "https://api.telegram.org/bot{}/".format(TOKEN)
 
 environ["AWS_PROFILE"] = "bot_iam"
@@ -307,16 +307,23 @@ def update_competitive_win_loss(pool_id, epoch):
     return (data['w'], data['l'])
 
 
+def set_prefix(number):
+    if number < 1000:
+        return number
+    else:
+        return si_format(number, precision=2)
+
+
 def check_delegation_changes(chat_id, ticker, delegations, new_delegations):
     if delegations != new_delegations:
         db.update_delegation(chat_id, ticker, new_delegations)
         if delegations > new_delegations:
             message = f'\\[ {ticker} ]\n' \
-                      f'- {si_format(delegations - new_delegations, precision=2)} ADA! Your delegations has decreased to: {si_format(new_delegations, precision=2)} ADA'
+                      f'- {set_prefix(delegations - new_delegations)} ADA! Your delegations has decreased to: {set_prefix(new_delegations)} ADA'
             send_message(message, chat_id)
         elif delegations < new_delegations:
             message = f'\\[ {ticker} ]\n' \
-                      f'+ {si_format(new_delegations - delegations, precision=2)} ADA! Your delegations has increased to: {si_format(new_delegations, precision=2)} ADA'
+                      f'+ {set_prefix(new_delegations - delegations)} ADA! Your delegations has increased to: {set_prefix(new_delegations)} ADA'
             send_message(message, chat_id)
 
 
@@ -495,12 +502,12 @@ def check_for_new_epoch():
                           f'\n' \
                           f'{globe}Epoch {current_epoch} stats:{globe}\n' \
                           f'\n' \
-                          f'{moneyBag}Live stake {si_format(delegations, precision=2)}\n' \
+                          f'{moneyBag}Live stake {set_prefix(delegations)}\n' \
                           f'{tools}Blocks created: {blocks_minted}\n' \
                           f'{swords}Slot battles: {wins}/{wins + losses}\n' \
                           f'\n' \
-                          f'Stakers rewards {si_format(rewards_stakers / 1000000, precision=2)}\n' \
-                          f'Tax rewards {si_format(rewards_tax / 1000000, precision=2)}\n' \
+                          f'Stakers rewards {set_prefix(rewards_stakers / 1000000)}\n' \
+                          f'Tax rewards {set_prefix(rewards_tax / 1000000)}\n' \
                           f'\n' \
                           f'More info at:\n' \
                           f'https://pooltool.io/pool/{pool_id}/'

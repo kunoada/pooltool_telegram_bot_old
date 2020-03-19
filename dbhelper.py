@@ -16,31 +16,18 @@ class DBHelper:
         
         tblstmt = "CREATE TABLE IF NOT EXISTS users (chat_id integer PRIMARY KEY, username text )"        
         self.conn.execute(tblstmt)
-        
-        
-        tblstmt = "CREATE TABLE IF NOT EXISTS pools(pool_id TEXT  PRIMARY, ticker TEXT  " \
-                  "delegations integer default 0 ,blocks_minted integer default 0)"         
+
+        tblstmt = "CREATE TABLE IF NOT EXISTS pools(pool_id TEXT PRIMARY KEY, ticker TEXT," \
+                  "delegations integer default 0, blocks_minted integer default 0)"
         self.conn.execute(tblstmt)
         
         tblstmt = "CREATE TABLE IF NOT EXISTS user_pool (chat_id integer , pool_id TEXT , block_minted integer default 1, " \
-                   "battle integer default 1 , sync_status integer default 1, block_adjustment integer default 1, "\
-                   "stake_change integer default 1  " \
-                   "PRIMARY KEY (chat_id,pool_id) " \
-                   "FOREIGN KEY (chat_id) REFERENCES users(chat_id) " \
-                   "FOREIGN KEY (pool_id) REFERENCES pools(pool_id)
-                    )"
-        
+                  "battle integer default 1 , sync_status integer default 1, block_adjustment integer default 1, "\
+                  "stake_change integer default 1," \
+                  "PRIMARY KEY (chat_id,pool_id) " \
+                  "FOREIGN KEY (chat_id) REFERENCES users(chat_id) " \
+                  "FOREIGN KEY (pool_id) REFERENCES pools(pool_id)) "
         self.conn.execute(tblstmt)
-        
-        
-        
-        
-        
-        
-    
-    
-        
-        
         self.conn.commit()
 
     def add_chat_id(self, chat_id):
