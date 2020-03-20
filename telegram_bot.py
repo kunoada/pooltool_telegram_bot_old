@@ -22,7 +22,7 @@ session = boto3.Session(profile_name='bot_iam')
 sqs = boto3.client('sqs')
 queue_url = 'https://sqs.us-west-2.amazonaws.com/637019325511/pooltoolevents.fifo'
 
-current_epoch = 0
+# current_epoch = 0
 
 lightning = '⚡'
 fire = '🔥'
@@ -38,6 +38,9 @@ link = '🔗'
 globe = '🌐'
 tools = '🛠'
 chains = '⛓'
+brick = '🧱'
+meat = '🥩'
+flyingMoney = '💸'
 
 
 def get_url(url):
@@ -395,8 +398,10 @@ def handle_battle(data):
             for chat_id in chat_ids:
                 ticker = db.get_ticker_from_poolid(player['pool'])[0]
                 message = f'\\[ {ticker} ] You won! {throphy}\n' \
-                          f'{swords}{battle_type} battle at height: {height}\n' \
-                          f'{competitors}\n' \
+                          f'\n' \
+                          f'{swords}{battle_type} battle: {competitors}\n' \
+                          f'{brick} Height: {height}\n' \
+                          f'\n' \
                           f'https://pooltool.io/competitive'
                 send_message(message, chat_id)
         else:
@@ -404,8 +409,10 @@ def handle_battle(data):
             for chat_id in chat_ids:
                 ticker = db.get_ticker_from_poolid(player['pool'])[0]
                 message = f'\\[ {ticker} ] You lost! {annoyed}\n' \
-                          f'{swords}{battle_type} battle at height: {height}\n' \
-                          f'{competitors}\n' \
+                          f'\n' \
+                          f'{swords} {battle_type} battle: {competitors}\n' \
+                          f'{brick} Height: {height}\n' \
+                          f'\n' \
                           f'https://pooltool.io/competitive'
                 send_message(message, chat_id)
 
@@ -431,14 +438,19 @@ def handle_wallet_newpool(data):
 
 
 def handle_block_minted(data):
+    with open('block_minted', 'w') as f:
+        f.write(json.dumps(data))
+
     pool_id = data['pool']
     nbe = data['nbe']
     height = data['height']
     chat_ids = db.get_chat_ids_from_poolid(pool_id)
     for chat_id in chat_ids:
         ticker = db.get_ticker_from_poolid(pool_id)[0]
-        message = f'\\[ {ticker} ] {fire}New block created at height: {height}{fire}\n' \
-                  f'{tools}Total blocks created this epoch: {nbe}'
+        message = f'\\[ {ticker} ] New block! {fire}\n' \
+                  f'\n' \
+                  f'{brick} Height: {height}\n' \
+                  f'{tools} Total blocks: {nbe}'
         send_message(message, chat_id)
         db.update_blocks_minted(chat_id, ticker, nbe)
 
@@ -460,12 +472,16 @@ def handle_stake_change(data):
 
 
 def handle_block_adjustment(data):
+    global current_epoch
     pool_id = data['pool']
     chat_ids = db.get_chat_ids_from_poolid(pool_id)
     for chat_id in chat_ids:
         ticker = db.get_ticker_from_poolid(pool_id)[0]
-        message = f'\\[ {ticker} ] {warning}Block adjustment{warning}\n' \
-                  f"Total blocks this epoch has changed from {data['old_epoch_blocks']} to {data['new_epoch_blocks']}\n" \
+        message = f'\\[ {ticker} ] Block adjustment{warning}\n' \
+                  f'\n' \
+                  f"Total blocks has changed: {data['old_epoch_blocks']} to {data['new_epoch_blocks']}\n" \
+                  f"Epoch: {current_epoch}\n" \
+                  f"\n" \
                   f"More info:\n" \
                   f"https://pooltool.io/"
         send_message(message, chat_id)
@@ -478,49 +494,72 @@ def handle_sync_change(data):
     for chat_id in chat_ids:
         ticker = db.get_ticker_from_poolid(pool_id)[0]
         if not data['new_status']:
-            message = f'\\[ {ticker} ] {alert}Pool is out of sync{alert}'
+            message = f'\\[ {ticker} ] Out of sync {alert}'
             send_message(message, chat_id)
         else:
-            message = f'\\[ {ticker} ] {like}Pool is back in sync{like}'
+            message = f'\\[ {ticker} ] Back in sync {like}'
             send_message(message, chat_id)
 
 
-def check_for_new_epoch():
-    global current_epoch
-    epoch = get_current_epoch()
+# def check_for_new_epoch():
+#     global current_epoch
+#     epoch = get_current_epoch()
+#
+#     if current_epoch < epoch:
+#         chat_ids = list(set(db.get_chat_ids()))
+#         for chat_id in chat_ids:
+#             tickers = db.get_tickers(chat_id)
+#             for ticker in tickers:
+#                 pool_id, delegations, blocks_minted = db.get_items(chat_id, ticker)
+#                 delegations, blocks_minted, new_last_block_epoch = update_livestats(pool_id)
+#                 wins, losses = update_competitive_win_loss(pool_id, current_epoch)
+#                 rewards_stakers, rewards_tax = update_rewards(pool_id, current_epoch)
+#                 message = f'\\[ {ticker} ] Epoch {current_epoch} stats {globe}\n' \
+#                           f'\n' \
+#                           f'{meat} Live stake {set_prefix(delegations)}\n' \
+#                           f'{tools} Blocks created: {blocks_minted}\n' \
+#                           f'{swords} Slot battles: {wins}/{wins + losses}\n' \
+#                           f'\n' \
+#                           f'{moneyBag} Stakers rewards: {set_prefix(rewards_stakers / 1000000)}\n' \
+#                           f'{flyingMoney} Tax rewards {set_prefix(rewards_tax / 1000000)}\n' \
+#                           f'\n' \
+#                           f'More info at:\n' \
+#                           f'https://pooltool.io/pool/{pool_id}/'
+#                 send_message(message, chat_id)
+#         current_epoch = epoch
 
-    if current_epoch < epoch:
-        chat_ids = list(set(db.get_chat_ids()))
-        for chat_id in chat_ids:
-            tickers = db.get_tickers(chat_id)
-            for ticker in tickers:
-                pool_id, delegations, blocks_minted = db.get_items(chat_id, ticker)
-                # delegations, blocks_minted, new_last_block_epoch = update_livestats(pool_id)
-                wins, losses = update_competitive_win_loss(pool_id, current_epoch)
-                rewards_stakers, rewards_tax = update_rewards(pool_id, current_epoch)
-                message = f'\\[ {ticker} ]\n' \
-                          f'\n' \
-                          f'{globe}Epoch {current_epoch} stats:{globe}\n' \
-                          f'\n' \
-                          f'{moneyBag}Live stake {set_prefix(delegations)}\n' \
-                          f'{tools}Blocks created: {blocks_minted}\n' \
-                          f'{swords}Slot battles: {wins}/{wins + losses}\n' \
-                          f'\n' \
-                          f'Stakers rewards {set_prefix(rewards_stakers / 1000000)}\n' \
-                          f'Tax rewards {set_prefix(rewards_tax / 1000000)}\n' \
-                          f'\n' \
-                          f'More info at:\n' \
-                          f'https://pooltool.io/pool/{pool_id}/'
-                send_message(message, chat_id)
-        current_epoch = epoch
+
+def handle_epoch_summary(data):
+    pool_id = data['pool']
+    delegations = data['blockstake'] / 1000000
+    rewards_stakers = data['value_for_stakers']
+    rewards_tax = data['value_taxed']
+    last_epoch = get_current_epoch() - 1
+    not_used_delegations, blocks_minted, new_last_block_epoch = update_livestats(pool_id)
+    wins, losses = update_competitive_win_loss(pool_id, last_epoch)
+    chat_ids = db.get_chat_ids_from_poolid(pool_id)
+    for chat_id in chat_ids:
+        ticker = db.get_ticker_from_poolid(pool_id)[0]
+        message = f'\\[ {ticker} ] Epoch {last_epoch} stats {globe}\n' \
+                  f'\n' \
+                  f'{meat} Live stake {set_prefix(delegations)}\n' \
+                  f'{tools} Blocks created: {blocks_minted}\n' \
+                  f'{swords} Slot battles: {wins}/{wins + losses}\n' \
+                  f'\n' \
+                  f'{moneyBag} Stakers rewards: {set_prefix(rewards_stakers / 1000000)}\n' \
+                  f'{flyingMoney} Tax rewards: {set_prefix(rewards_tax / 1000000)}\n' \
+                  f'\n' \
+                  f'More info at:\n' \
+                  f'https://pooltool.io/pool/{pool_id}/'
+        send_message(message, chat_id)
 
 
 def start_telegram_notifier():
     ## On start init..
-    global current_epoch
-    current_epoch = get_current_epoch()
-    ##
-    periodic_new_epoch_check = time.time()
+    # global current_epoch
+    # current_epoch = get_current_epoch()
+    # ##
+    # periodic_new_epoch_check = time.time()
     while True:
         event = get_aws_event()
         if event != '':
@@ -548,10 +587,13 @@ def start_telegram_notifier():
             elif body['type'] == 'sync_change':
                 handle_sync_change(data)
                 continue
+            elif body['type'] == 'epoch_summary':
+                handle_epoch_summary(data)
+                continue
 
-        if time.time() - periodic_new_epoch_check > 10 * 60:  # Check every 10 min
-            check_for_new_epoch()
-            periodic_new_epoch_check = time.time()
+        # if time.time() - periodic_new_epoch_check > 10 * 60:  # Check every 10 min
+        #     check_for_new_epoch()
+        #     periodic_new_epoch_check = time.time()
         time.sleep(0.5)
 
 

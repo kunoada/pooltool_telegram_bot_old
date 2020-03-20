@@ -18,7 +18,7 @@ class DBHelper:
         self.conn.execute(tblstmt)
 
         tblstmt = "CREATE TABLE IF NOT EXISTS pools(pool_id , ticker TEXT," \
-                  "delegations integer default 0, blocks_minted integer default 0,  \
+                  "delegations integer default 0, blocks_minted integer default 0," \
                   "PRIMARY KEY (pool_id,ticker))"
         self.conn.execute(tblstmt)
         
@@ -30,12 +30,24 @@ class DBHelper:
                   "FOREIGN KEY (pool_id,ticker) REFERENCES pools(pool_id,ticker)) "
         self.conn.execute(tblstmt)
         self.conn.commit()
+        # self.migrate_db()
+
+    def add_user(self, chat_id, username):
+        stmt = "INSERT INTO users (chat_id, username) VALUES (?)"
+        args = (chat_id, username)
+        self.conn.execute(stmt, args)
+        self.conn.commit()
 
     def add_chat_id(self, chat_id):
-        stmt = "INSERT INTO items (chat_id) VALUES (?)"
+        stmt = "INSERT INTO users (chat_id) VALUES (?)"
         args = (chat_id)
         self.conn.execute(stmt, args)
         self.conn.commit()
+
+    def does_pool_ticker_exist(self, pool_id, ticker):
+        stmt = "SELECT pools WHERE pool_id = (?) AND ticker = (?)"
+        args = (pool_id, ticker)
+        return len([x[0] for x in self.conn.execute(stmt, args)])
 
     def add_item(self, chat_id, ticker):
         try:
@@ -103,15 +115,14 @@ class DBHelper:
         args = (pool_id, chat_id, ticker)
         self.conn.execute(stmt, args)
         self.conn.commit()
-        
-   def migrate_db(self):
-       stmt = "insert into users (chat_id) select distinct(chat_id) from items"
-       self.conn.execute(stmt)
-       stmt = "insert into pools (pool_id,ticker) select pool_id,ticker from items"
-       self.conn.execute(stmt)
-       stmt = "insert into pool_user (chat_id,pool_id) select chat_id,pool_id from items"
-       self.conn.execute(stmt)
-        
-    
-       self.conn.commit()
+
+    def migrate_db(self):
+        stmt = "insert into users (chat_id) select distinct(chat_id) from items"
+        self.conn.execute(stmt)
+        stmt = "insert into pools (pool_id, ticker) select distinct pool_id, ticker from items"
+        self.conn.execute(stmt)
+        stmt = "insert into user_pool (chat_id,pool_id, ticker) select distinct chat_id, pool_id, ticker from items"
+        self.conn.execute(stmt)
+
+        self.conn.commit()
     

@@ -6,11 +6,12 @@
 venv*
 
 # pooltool_telegram_bot
-*.sqlite
+*.sqlite*
 token*
 stake_change
 wallet_newpool
 event_log
+block_minted
 fake_event.py
 send_tg_msg.py
 tickers_reverse.py
