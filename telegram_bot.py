@@ -472,9 +472,9 @@ def handle_stake_change(data):
 
 
 def handle_block_adjustment(data):
-    global current_epoch
     pool_id = data['pool']
     chat_ids = db.get_chat_ids_from_poolid(pool_id)
+    current_epoch = get_current_epoch()
     for chat_id in chat_ids:
         ticker = db.get_ticker_from_poolid(pool_id)[0]
         message = f'\\[ {ticker} ] Block adjustment{warning}\n' \

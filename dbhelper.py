@@ -49,6 +49,17 @@ class DBHelper:
         args = (pool_id, ticker)
         return len([x[0] for x in self.conn.execute(stmt, args)])
 
+    def get_option(self, chat_id, ticker, option_type):
+        stmt = f"SELECT {option_type} FROM user_pool WHERE chat_id = (?) AND ticker = (?)"
+        args = (chat_id, ticker)
+        return [x[0] for x in self.conn.execute(stmt, args)]
+
+    def update_option(self, chat_id, ticker, option_type, value):
+        stmt = f"UPDATE user_pool SET {option_type} = (?) WHERE chat_id = (?) AND ticker = (?)"
+        args = (value, chat_id, ticker)
+        self.conn.execute(stmt, args)
+        self.conn.commit()
+
     def add_item(self, chat_id, ticker):
         try:
             stmt = "INSERT INTO items (chat_id, ticker) VALUES (?, ?)"
