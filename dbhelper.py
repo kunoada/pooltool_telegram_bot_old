@@ -37,7 +37,7 @@ class DBHelper:
             print("Assuming db is already migrated")
 
     def add_user(self, chat_id, username):
-        stmt = "INSERT INTO users (chat_id, username) VALUES (?)"
+        stmt = "INSERT INTO users (chat_id, username) VALUES (?, ?)"
         args = (chat_id, username)
         self.conn.execute(stmt, args)
         self.conn.commit()
