@@ -109,7 +109,7 @@ def handle_help(chat):
 
 
 def handle_option_help(chat):
-    message = "*Options for each pool:*\n" \
+    message = "*Change options for a pool:*\n" \
               "\n" \
               "Usage: /OPTION \\[POOL TICKER] \\[OPTION TYPE] \\[VALUE]\n" \
               "Example: /OPTION KUNO block\\_minted 0\n" \
@@ -125,7 +125,13 @@ def handle_option_help(chat):
               "\n" \
               "\\[VALUE] is the to enable/disable the notification:\n" \
               "- 0: Disable\n" \
-              "- 1: Enable"
+              "- 1: Enable\n" \
+              "\n" \
+              "\n" \
+              "*Get current options for a pool:*\n" \
+              "\n" \
+              "Usage: /OPTION \\[POOL TICKER] GET\n" \
+              "Example: /OPTION KUNO GET"
     send_message(message, chat)
 
 
@@ -208,17 +214,51 @@ def validate_option_usage(chat, text, tickers):
             send_message(message, chat)
             return False
     else:
-        message = "Something is wrong!\n" \
-                  "Either to many, or to few arguments"
-        send_message(message, chat)
         return False
     return True
+
+
+def validate_option_get(chat, text, tickers):
+    if len(text) == 3:
+        if not text[0] == "/OPTION":
+            message = 'Option is not the first argument'
+            send_message(message, chat)
+            return False
+        if not text[1] in tickers:
+            message = 'Ticker is not in your list of pools'
+            send_message(message, chat)
+            return False
+        if not text[2] == 'GET':
+            message = 'Unknown option type'
+            send_message(message, chat)
+            return False
+    else:
+        return False
+    return True
+
+
+def get_current_options(chat, text):
+    options_string = f'\\[ {text[1]} ] Options:\n' \
+                     f'\n' \
+                     f"block\\_minted: {db.get_option(chat, text[1], 'block_minted')}\n" \
+                     f"battle: {db.get_option(chat, text[1], 'battle')}\n" \
+                     f"sync\\_status: {db.get_option(chat, text[1], 'sync_status')}\n" \
+                     f"block\\_adjustment: {db.get_option(chat, text[1], 'block_adjustment')}\n" \
+                     f"stake\\_change: {db.get_option(chat, text[1], 'stake_change')}"
+    return options_string
 
 
 def handle_option(chat, text, tickers):
     text = text.split(' ')
     if validate_option_usage(chat, text, tickers):
         db.update_option(chat, text[1], text[2], text[3])
+    elif validate_option_get(chat, text, tickers):
+        message = get_current_options(chat, text)
+        send_message(message, chat)
+    else:
+        message = "Something is wrong!\n" \
+                  "Either to many, or to few arguments"
+        send_message(message, chat)
 
 
 def handle_updates(updates):
