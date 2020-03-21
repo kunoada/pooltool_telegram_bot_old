@@ -41,6 +41,7 @@ chains = '⛓'
 brick = '🧱'
 meat = '🥩'
 flyingMoney = '💸'
+clock = '⏱'
 
 
 def get_url(url):
@@ -546,7 +547,7 @@ def handle_block_minted(data):
             message = f'\\[ {ticker} ] New block! {fire}\n' \
                       f'\n' \
                       f'{brick} Height: {height}\n' \
-                      f'🔒 Slot: {epoch}.{slot}\n' \
+                      f'{clock} Slot: {epoch}.{slot}\n' \
                       f'{tools} Total blocks: {nbe}'
             send_message(message, chat_id)
 
