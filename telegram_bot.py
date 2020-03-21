@@ -91,13 +91,53 @@ def handle_start(chat):
     send_message(message, chat)
 
 
+def handle_help(chat):
+    message = "*Add/Remove pool:*\n" \
+              "Enter ticker of the pool, this will both add the pool to the list or delete if it is already on the list\n" \
+              "\n" \
+              "Example: KUNO\n" \
+              "\n" \
+              "\n" \
+              "*Options for each pool:*\n" \
+              "You can choose which notifications you want for each pool\n" \
+              "\n" \
+              "/OPTION \\[POOL TICKER] \\[OPTION TYPE] \\[VALUE]\n" \
+              "\n" \
+              "For more info about using option, enter /OPTION"
+    send_message(message, chat)
+
+
+def handle_option_help(chat):
+    message = "*Options for each pool:*\n" \
+              "\n" \
+              "Usage: /OPTION \\[POOL TICKER] \\[OPTION TYPE] \\[VALUE]\n" \
+              "Example: /OPTION KUNO block\\_minted 0\n" \
+              "\n" \
+              "\\[POOL TICKER] is the ticker of one pool from your list\n" \
+              "\n" \
+              "\\[OPTION TYPE] is the notification type:\n" \
+              "- block\\_minted: notifies for new blocks created\n" \
+              "- battle: notifies about battles\n" \
+              "- sync\\_status: notifies if pool is out of sync, or back in sync\n" \
+              "- block\\_adjustment: notifies if the amount of blocks created has been changed\n" \
+              "- stake\\_change: notifies if the stake has changed\n" \
+              "\n" \
+              "\\[VALUE] is the to enable/disable the notification:\n" \
+              "- 0: Disable\n" \
+              "- 1: Enable"
+    send_message(message, chat)
+
+
 def on_ticker_valid(ticker, number, chat, pool_id):
-    db.add_item(chat, ticker)
-    tickers = db.get_tickers(chat)
+    # db.add_item(chat, ticker)
+    db.add_new_pool(pool_id, ticker)
+    db.add_new_user_pool(chat, pool_id, ticker)
+    # tickers = db.get_tickers(chat)
+    tickers = db.get_tickers_from_chat_id(chat)
     message = "List of pools you watch:\n\n" + "\n".join(tickers)
     send_message(message, chat)
-    data = update_livestats(pool_id[number])
-    db.update_items(chat, f'{ticker}', pool_id[number], data[0], data[1])
+    # data = update_livestats(pool_id[number])
+    # db.update_items(chat, f'{ticker}', pool_id[number], data[0], data[1])
 
 
 def handle_duplicate_ticker(text, chat, pool_id):
@@ -138,7 +178,46 @@ def handle_new_ticker(text, chat):
     elif len(pool_id) > 1:
         handle_duplicate_ticker(text, chat, pool_id)
     else:
-        on_ticker_valid(text[0], 0, chat, pool_id)
+        on_ticker_valid(text[0], 0, chat, pool_id[0])
+
+
+def validate_option_usage(chat, text, tickers):
+    options = ['BLOCK_MINTED', 'BATTLE', 'SYNC_STATUS', 'BLOCK_ADJUSTMENT', 'STAKE_CHANGE']
+    if len(text) == 4:
+        if not text[0] == "/OPTION":
+            message = 'Option is not the first argument'
+            send_message(message, chat)
+            return False
+        if not text[1] in tickers:
+            message = 'Ticker is not in your list of pools'
+            send_message(message, chat)
+            return False
+        if not text[2] in options:
+            message = 'Unknown option type'
+            send_message(message, chat)
+            return False
+        try:
+            value = int(text[3])
+        except Exception as e:
+            message = 'Value is not a number'
+            send_message(message, chat)
+            return False
+        if not 0 <= value <= 1:
+            message = 'Value should be either, 0 or 1'
+            send_message(message, chat)
+            return False
+    else:
+        message = "Something is wrong!\n" \
+                  "Either to many, or to few arguments"
+        send_message(message, chat)
+        return False
+    return True
+
+
+def handle_option(chat, text, tickers):
+    text = text.split(' ')
+    if validate_option_usage(chat, text, tickers):
+        db.update_option(chat, text[1], text[2], text[3])
 
 
 def handle_updates(updates):
@@ -150,7 +229,7 @@ def handle_updates(updates):
                     continue
                 text = update["message"]["text"].upper()
                 chat = update["message"]["chat"]["id"]
-                tickers = db.get_tickers(chat)
+                tickers = db.get_tickers_from_chat_id(chat)
                 if text == "/DELETE":
                     if not tickers:
                         send_message("No TICKERs added", chat)
@@ -159,11 +238,22 @@ def handle_updates(updates):
                     send_message("Select pool to delete", chat, keyboard)
                 elif text == "/START":
                     handle_start(chat)
+                    name = update["message"]["chat"]["first_name"]
+                    db.add_user(chat, name)
+                elif text == "/HELP":
+                    handle_help(chat)
+                elif "/OPTION" in text:
+                    if text == "/OPTION":
+                        handle_option_help(chat)
+                    else:
+                        handle_option(chat, text, tickers)
                 elif text.startswith("/"):
                     continue
                 elif text in tickers:
-                    db.delete_item(chat, text)
-                    tickers = db.get_tickers(chat)
+                    db.delete_user_pool(chat, text)
+                    # db.delete_item(chat, text)
+                    tickers = db.get_tickers_from_chat_id(chat)
+                    # tickers = db.get_tickers(chat)
                     message = "List of pools you watch:\n\n" + "\n".join(tickers)
                     send_message(message, chat)
                 else:
@@ -318,16 +408,16 @@ def set_prefix(number):
 
 
 def check_delegation_changes(chat_id, ticker, delegations, new_delegations):
-    if delegations != new_delegations:
-        db.update_delegation(chat_id, ticker, new_delegations)
-        if delegations > new_delegations:
-            message = f'\\[ {ticker} ]\n' \
-                      f'- {set_prefix(delegations - new_delegations)} ADA! Your delegations has decreased to: {set_prefix(new_delegations)} ADA'
-            send_message(message, chat_id)
-        elif delegations < new_delegations:
-            message = f'\\[ {ticker} ]\n' \
-                      f'+ {set_prefix(new_delegations - delegations)} ADA! Your delegations has increased to: {set_prefix(new_delegations)} ADA'
-            send_message(message, chat_id)
+    # if delegations != new_delegations:
+    #     db.update_delegation(chat_id, ticker, new_delegations)
+    if delegations > new_delegations:
+        message = f'\\[ {ticker} ]\n' \
+                  f'- {set_prefix(delegations - new_delegations)} ADA! Your delegations has decreased to: {set_prefix(new_delegations)} ADA'
+        send_message(message, chat_id)
+    elif delegations < new_delegations:
+        message = f'\\[ {ticker} ]\n' \
+                  f'+ {set_prefix(new_delegations - delegations)} ADA! Your delegations has increased to: {set_prefix(new_delegations)} ADA'
+        send_message(message, chat_id)
 
 
 def start_telegram_update_handler():
@@ -394,27 +484,29 @@ def handle_battle(data):
     competitors = who_battled(players)
     for player in data['players']:
         if player['pool'] == data['winner']:
-            chat_ids = db.get_chat_ids_from_poolid(player['pool'])
+            chat_ids = db.get_chat_ids_from_pool_id(player['pool'])
             for chat_id in chat_ids:
-                ticker = db.get_ticker_from_poolid(player['pool'])[0]
-                message = f'\\[ {ticker} ] You won! {throphy}\n' \
-                          f'\n' \
-                          f'{swords}{battle_type} battle: {competitors}\n' \
-                          f'{brick} Height: {height}\n' \
-                          f'\n' \
-                          f'https://pooltool.io/competitive'
-                send_message(message, chat_id)
+                ticker = db.get_ticker_from_pool_id(player['pool'])[0]
+                if db.get_option(chat_id, ticker, 'battle'):
+                    message = f'\\[ {ticker} ] You won! {throphy}\n' \
+                              f'\n' \
+                              f'{swords}{battle_type} battle: {competitors}\n' \
+                              f'{brick} Height: {height}\n' \
+                              f'\n' \
+                              f'https://pooltool.io/competitive'
+                    send_message(message, chat_id)
         else:
-            chat_ids = db.get_chat_ids_from_poolid(player['pool'])
+            chat_ids = db.get_chat_ids_from_pool_id(player['pool'])
             for chat_id in chat_ids:
-                ticker = db.get_ticker_from_poolid(player['pool'])[0]
-                message = f'\\[ {ticker} ] You lost! {annoyed}\n' \
-                          f'\n' \
-                          f'{swords} {battle_type} battle: {competitors}\n' \
-                          f'{brick} Height: {height}\n' \
-                          f'\n' \
-                          f'https://pooltool.io/competitive'
-                send_message(message, chat_id)
+                ticker = db.get_ticker_from_pool_id(player['pool'])[0]
+                if db.get_option(chat_id, ticker, 'battle'):
+                    message = f'\\[ {ticker} ] You lost! {annoyed}\n' \
+                              f'\n' \
+                              f'{swords} {battle_type} battle: {competitors}\n' \
+                              f'{brick} Height: {height}\n' \
+                              f'\n' \
+                              f'https://pooltool.io/competitive'
+                    send_message(message, chat_id)
 
 
 def handle_wallet_poolchange(data):
@@ -423,8 +515,6 @@ def handle_wallet_poolchange(data):
 
 
 def handle_wallet_newpool(data):
-    with open('wallet_newpool', 'w') as f:
-        f.write(json.dumps(data))
     with open('tickers.json', 'w') as f:
         data = get_new_ticker_file()
         if data != 'error':
@@ -444,15 +534,18 @@ def handle_block_minted(data):
     pool_id = data['pool']
     nbe = data['nbe']
     height = data['height']
-    chat_ids = db.get_chat_ids_from_poolid(pool_id)
+    epoch = data['epoch']
+    slot = data['slot']
+    chat_ids = db.get_chat_ids_from_pool_id(pool_id)
     for chat_id in chat_ids:
-        ticker = db.get_ticker_from_poolid(pool_id)[0]
-        message = f'\\[ {ticker} ] New block! {fire}\n' \
-                  f'\n' \
-                  f'{brick} Height: {height}\n' \
-                  f'{tools} Total blocks: {nbe}'
-        send_message(message, chat_id)
-        db.update_blocks_minted(chat_id, ticker, nbe)
+        ticker = db.get_ticker_from_pool_id(pool_id)[0]
+        if db.get_option(chat_id, ticker, 'block_minted'):
+            message = f'\\[ {ticker} ] New block! {fire}\n' \
+                      f'\n' \
+                      f'{brick} Height: {height}\n' \
+                      f'🔒 Slot: {epoch}.{slot}\n' \
+                      f'{tools} Total blocks: {nbe}'
+            send_message(message, chat_id)
 
 
 def handle_stake_change(data):
@@ -460,73 +553,43 @@ def handle_stake_change(data):
         f.write(json.dumps(data))
 
     pool_id = data['pool']
-    chat_ids = db.get_chat_ids_from_poolid(pool_id)
+    chat_ids = db.get_chat_ids_from_pool_id(pool_id)
     if chat_ids:
-        ticker = db.get_ticker_from_poolid(pool_id)[0]
+        ticker = db.get_ticker_from_pool_id(pool_id)[0]
         for chat_id in chat_ids:
-            # pool_id, delegations, blocks_minted = db.get_items(chat_id, ticker)
-            # new_delegations, new_blocks_minted, new_last_block_epoch = update_livestats(pool_id)
-            # if new_last_block_epoch == 0:
-            #     continue
-            check_delegation_changes(chat_id, ticker, data['old_stake'] / 1000000, data['livestake'] / 1000000)
+            if db.get_option(chat_id, ticker, 'stake_change'):
+                check_delegation_changes(chat_id, ticker, data['old_stake'] / 1000000, data['livestake'] / 1000000)
 
 
 def handle_block_adjustment(data):
     pool_id = data['pool']
-    chat_ids = db.get_chat_ids_from_poolid(pool_id)
+    chat_ids = db.get_chat_ids_from_pool_id(pool_id)
     current_epoch = get_current_epoch()
     for chat_id in chat_ids:
-        ticker = db.get_ticker_from_poolid(pool_id)[0]
-        message = f'\\[ {ticker} ] Block adjustment{warning}\n' \
-                  f'\n' \
-                  f"Total blocks has changed: {data['old_epoch_blocks']} to {data['new_epoch_blocks']}\n" \
-                  f"Epoch: {current_epoch}\n" \
-                  f"\n" \
-                  f"More info:\n" \
-                  f"https://pooltool.io/"
-        send_message(message, chat_id)
-        db.update_blocks_minted(chat_id, ticker, data['new_epoch_blocks'])
+        ticker = db.get_ticker_from_pool_id(pool_id)[0]
+        if db.get_option(chat_id, ticker, 'block_adjustment'):
+            message = f'\\[ {ticker} ] Block adjustment{warning}\n' \
+                      f'\n' \
+                      f"Total blocks has changed: {data['old_epoch_blocks']} to {data['new_epoch_blocks']}\n" \
+                      f"Epoch: {current_epoch}\n" \
+                      f"\n" \
+                      f"More info:\n" \
+                      f"https://pooltool.io/"
+            send_message(message, chat_id)
 
 
-def handle_sync_change(data):
+def handle_sync_status(data):
     pool_id = data['pool']
-    chat_ids = db.get_chat_ids_from_poolid(pool_id)
+    chat_ids = db.get_chat_ids_from_pool_id(pool_id)
     for chat_id in chat_ids:
-        ticker = db.get_ticker_from_poolid(pool_id)[0]
-        if not data['new_status']:
-            message = f'\\[ {ticker} ] Out of sync {alert}'
-            send_message(message, chat_id)
-        else:
-            message = f'\\[ {ticker} ] Back in sync {like}'
-            send_message(message, chat_id)
-
-
-# def check_for_new_epoch():
-#     global current_epoch
-#     epoch = get_current_epoch()
-#
-#     if current_epoch < epoch:
-#         chat_ids = list(set(db.get_chat_ids()))
-#         for chat_id in chat_ids:
-#             tickers = db.get_tickers(chat_id)
-#             for ticker in tickers:
-#                 pool_id, delegations, blocks_minted = db.get_items(chat_id, ticker)
-#                 delegations, blocks_minted, new_last_block_epoch = update_livestats(pool_id)
-#                 wins, losses = update_competitive_win_loss(pool_id, current_epoch)
-#                 rewards_stakers, rewards_tax = update_rewards(pool_id, current_epoch)
-#                 message = f'\\[ {ticker} ] Epoch {current_epoch} stats {globe}\n' \
-#                           f'\n' \
-#                           f'{meat} Live stake {set_prefix(delegations)}\n' \
-#                           f'{tools} Blocks created: {blocks_minted}\n' \
-#                           f'{swords} Slot battles: {wins}/{wins + losses}\n' \
-#                           f'\n' \
-#                           f'{moneyBag} Stakers rewards: {set_prefix(rewards_stakers / 1000000)}\n' \
-#                           f'{flyingMoney} Tax rewards {set_prefix(rewards_tax / 1000000)}\n' \
-#                           f'\n' \
-#                           f'More info at:\n' \
-#                           f'https://pooltool.io/pool/{pool_id}/'
-#                 send_message(message, chat_id)
-#         current_epoch = epoch
+        ticker = db.get_ticker_from_pool_id(pool_id)[0]
+        if db.get_option(chat_id, ticker, 'sync_status'):
+            if not data['new_status']:
+                message = f'\\[ {ticker} ] Out of sync {alert}'
+                send_message(message, chat_id)
+            else:
+                message = f'\\[ {ticker} ] Back in sync {like}'
+                send_message(message, chat_id)
 
 
 def handle_epoch_summary(data):
@@ -537,9 +600,9 @@ def handle_epoch_summary(data):
     last_epoch = get_current_epoch() - 1
     not_used_delegations, blocks_minted, new_last_block_epoch = update_livestats(pool_id)
     wins, losses = update_competitive_win_loss(pool_id, last_epoch)
-    chat_ids = db.get_chat_ids_from_poolid(pool_id)
+    chat_ids = db.get_chat_ids_from_pool_id(pool_id)
     for chat_id in chat_ids:
-        ticker = db.get_ticker_from_poolid(pool_id)[0]
+        ticker = db.get_ticker_from_pool_id(pool_id)[0]
         message = f'\\[ {ticker} ] Epoch {last_epoch} stats {globe}\n' \
                   f'\n' \
                   f'{meat} Live stake {set_prefix(delegations)}\n' \
@@ -555,11 +618,6 @@ def handle_epoch_summary(data):
 
 
 def start_telegram_notifier():
-    ## On start init..
-    # global current_epoch
-    # current_epoch = get_current_epoch()
-    # ##
-    # periodic_new_epoch_check = time.time()
     while True:
         event = get_aws_event()
         if event != '':
@@ -585,20 +643,18 @@ def start_telegram_notifier():
                 handle_block_adjustment(data)
                 continue
             elif body['type'] == 'sync_change':
-                handle_sync_change(data)
+                handle_sync_status(data)
                 continue
             elif body['type'] == 'epoch_summary':
                 handle_epoch_summary(data)
                 continue
 
-        # if time.time() - periodic_new_epoch_check > 10 * 60:  # Check every 10 min
-        #     check_for_new_epoch()
-        #     periodic_new_epoch_check = time.time()
         time.sleep(0.5)
 
 
 def main():
     db.setup()
+
     updates_handler = threading.Thread(target=start_telegram_update_handler)
     notifier = threading.Thread(target=start_telegram_notifier)
 
