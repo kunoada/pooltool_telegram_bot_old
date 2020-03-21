@@ -36,6 +36,11 @@ class DBHelper:
         except Exception as err:
             print("Assuming db is already migrated")
 
+    def get_chat_ids(self):
+        stmt = "SELECT chat_id FROM users"
+        args = ()
+        return [x[0] for x in self.conn.execute(stmt, args)]
+
     def add_user(self, chat_id, username):
         stmt = "INSERT INTO users (chat_id, username) VALUES (?, ?)"
         args = (chat_id, username)
