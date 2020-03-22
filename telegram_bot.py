@@ -651,7 +651,7 @@ def handle_epoch_summary(data):
     delegations = data['blockstake'] / 1000000
     rewards_stakers = data['value_for_stakers']
     rewards_tax = data['value_taxed']
-    last_epoch = get_current_epoch() - 1
+    last_epoch = data['epoch']
     not_used_delegations, blocks_minted, new_last_block_epoch = update_livestats(pool_id)
     wins, losses = update_competitive_win_loss(pool_id, last_epoch)
     chat_ids = db.get_chat_ids_from_pool_id(pool_id)
