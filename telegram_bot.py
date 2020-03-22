@@ -139,8 +139,8 @@ def handle_option_help(chat):
 
 def on_ticker_valid(ticker, number, chat, pool_id):
     # db.add_item(chat, ticker)
-    db.add_new_pool(pool_id[number], ticker)
-    db.add_new_user_pool(chat, pool_id[number], ticker)
+    db.add_new_pool(pool_id, ticker)
+    db.add_new_user_pool(chat, pool_id, ticker)
     # tickers = db.get_tickers(chat)
     tickers = db.get_tickers_from_chat_id(chat)
     message = "List of pools you watch:\n\n" + "\n".join(tickers)
