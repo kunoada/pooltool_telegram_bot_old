@@ -42,6 +42,8 @@ brick = '🧱'
 meat = '🥩'
 flyingMoney = '💸'
 clock = '⏱'
+arrowDown = '🔻'
+arrowUp = '🔺'
 
 
 def get_url(url):
@@ -250,6 +252,13 @@ def get_current_options(chat, text):
 
 def handle_option(chat, text, tickers):
     text = text.split(' ')
+    if text[2].isdigit(): # Assuming we work with a duplicate ticker
+        new_list = []
+        if len(text) == 4:
+            new_list.extend([text[0], ' '.join([text[1], text[2]]), text[3]])
+        elif len(text) == 5:
+            new_list.extend([text[0], ' '.join([text[1], text[2]]), text[3], text[4]])
+        text = new_list
     if validate_option_usage(chat, text, tickers):
         db.update_option(chat, text[1], text[2], text[3])
     elif validate_option_get(chat, text, tickers):
@@ -452,15 +461,15 @@ def set_prefix(number):
 
 
 def check_delegation_changes(chat_id, ticker, delegations, new_delegations):
-    # if delegations != new_delegations:
-    #     db.update_delegation(chat_id, ticker, new_delegations)
     if delegations > new_delegations:
-        message = f'\\[ {ticker} ]\n' \
-                  f'- {set_prefix(delegations - new_delegations)} ADA! Your delegations has decreased to: {set_prefix(new_delegations)} ADA'
+        message = f'\\[ {ticker} ] Stake decreased {arrowDown}\n' \
+                  f'-{set_prefix(delegations - new_delegations)}\n' \
+                  f'Livestake: {set_prefix(new_delegations)}'
         send_message(message, chat_id)
     elif delegations < new_delegations:
-        message = f'\\[ {ticker} ]\n' \
-                  f'+ {set_prefix(new_delegations - delegations)} ADA! Your delegations has increased to: {set_prefix(new_delegations)} ADA'
+        message = f'\\[ {ticker} ] Stake increased {arrowUp}\n' \
+                  f'+{set_prefix(new_delegations - delegations)}\n' \
+                  f'Livestake: {set_prefix(new_delegations)}'
         send_message(message, chat_id)
 
 
