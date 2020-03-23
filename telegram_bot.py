@@ -289,11 +289,12 @@ def handle_updates(updates):
                     send_message("Select pool to delete", chat, keyboard)
                 elif text == "/START":
                     handle_start(chat)
-                    name = update["message"]["chat"]["first_name"]
-                    try:
-                        db.add_user(chat, name)
-                    except Exception as e:
-                        print('Assuming user is already added')
+                    if 'first_name' in update["message"]["chat"]:
+                        name = update["message"]["chat"]["first_name"]
+                        try:
+                            db.add_user(chat, name)
+                        except Exception as e:
+                            print('Assuming user is already added')
                 elif text == "/HELP":
                     handle_help(chat)
                 elif "/OPTION" in text:
