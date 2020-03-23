@@ -289,8 +289,8 @@ def handle_updates(updates):
                     send_message("Select pool to delete", chat, keyboard)
                 elif text == "/START":
                     handle_start(chat)
-                    if 'first_name' in update["message"]["chat"]:
-                        name = update["message"]["chat"]["first_name"]
+                    if 'first_name' in update["message"]["text"]:
+                        name = update["message"]["text"]["first_name"]
                         try:
                             db.add_user(chat, name)
                         except Exception as e:
@@ -366,6 +366,7 @@ def get_ticker_from_pool_id(pool_id):
 
 
 def get_new_ticker_file():
+    time.sleep(60)
     url_ticker = 'https://pooltool.s3-us-west-2.amazonaws.com/8e4d2a3/tickers.json'
     try:
         r = requests.get(url_ticker)
