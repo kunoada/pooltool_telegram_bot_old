@@ -139,8 +139,8 @@ def handle_option_help(chat):
 
 def on_ticker_valid(ticker, number, chat, pool_id):
     # db.add_item(chat, ticker)
-    db.add_new_pool(pool_id, ticker)
-    db.add_new_user_pool(chat, pool_id, ticker)
+    db.add_new_pool(pool_id[number], ticker)
+    db.add_new_user_pool(chat, pool_id[number], ticker)
     # tickers = db.get_tickers(chat)
     tickers = db.get_tickers_from_chat_id(chat)
     message = "List of pools you watch:\n\n" + "\n".join(tickers)
@@ -187,7 +187,7 @@ def handle_new_ticker(text, chat):
     elif len(pool_id) > 1:
         handle_duplicate_ticker(text, chat, pool_id)
     else:
-        on_ticker_valid(text[0], 0, chat, pool_id[0])
+        on_ticker_valid(text[0], 0, chat, pool_id)
 
 
 def validate_option_usage(chat, text, tickers):
@@ -465,12 +465,12 @@ def set_prefix(number):
 
 def check_delegation_changes(chat_id, ticker, delegations, new_delegations):
     if delegations > new_delegations:
-        message = f'\\[ {ticker} ] Stake decreased {arrowDown}\n' \
+        message = f'\\[ {ticker} ] Stake decreased 💔\n' \
                   f'-{set_prefix(delegations - new_delegations)}\n' \
                   f'Livestake: {set_prefix(new_delegations)}'
         send_message(message, chat_id)
     elif delegations < new_delegations:
-        message = f'\\[ {ticker} ] Stake increased {arrowUp}\n' \
+        message = f'\\[ {ticker} ] Stake increased 💚\n' \
                   f'+{set_prefix(new_delegations - delegations)}\n' \
                   f'Livestake: {set_prefix(new_delegations)}'
         send_message(message, chat_id)
