@@ -659,11 +659,11 @@ def handle_epoch_summary(data):
     chat_ids = db.get_chat_ids_from_pool_id(pool_id)
     for chat_id in chat_ids:
         ticker = db.get_ticker_from_pool_id(pool_id)[0]
+        # f'{tools} Blocks created: {blocks_minted}\n' \
+        # f'{swords} Slot battles: {wins}/{wins + losses}\n' \
         message = f'\\[ {ticker} ] Epoch {last_epoch} stats {globe}\n' \
                   f'\n' \
                   f'{meat} Live stake {set_prefix(delegations)}\n' \
-                  f'{tools} Blocks created: {blocks_minted}\n' \
-                  f'{swords} Slot battles: {wins}/{wins + losses}\n' \
                   f'\n' \
                   f'{moneyBag} Stakers rewards: {set_prefix(rewards_stakers / 1000000)}\n' \
                   f'{flyingMoney} Tax rewards: {set_prefix(rewards_tax / 1000000)}\n' \
