@@ -90,6 +90,8 @@ def handle_start(chat):
               "1. Enter the TICKER again\n" \
               "2. Enter \"/DELETE\" to get a list with possible TICKERs to delete\n" \
               "\n" \
+              "For more information, enter \"/HELP\"\n" \
+              "\n" \
               "This pooltool bot was created for pooltool by KUNO stakepool"
     send_message(message, chat)
 
