@@ -267,6 +267,9 @@ def handle_option(chat, text, tickers):
                 options_string_builder[chat]['string'] = ' '.join(text)
                 options_string_builder[chat]['next'] = 'option_type'
                 send_option_type(chat)
+            else:
+                message = 'Ticker is not in your list of pools'
+                send_message(message, chat)
         elif len(text) == 3:
             ticker = ' '.join([text[1], text[2]])
             if ticker in tickers:
@@ -274,6 +277,9 @@ def handle_option(chat, text, tickers):
                 options_string_builder[chat]['string'] = ' '.join(text)
                 options_string_builder[chat]['next'] = 'option_type'
                 send_option_type(chat)
+            else:
+                message = 'Ticker is not in your list of pools'
+                send_message(message, chat)
 
     # if len(text) > 2:
     #     if text[2].isdigit(): # Assuming we work with a duplicate ticker
