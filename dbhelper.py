@@ -68,7 +68,10 @@ class DBHelper:
     def get_option(self, chat_id, ticker, option_type):
         stmt = f"SELECT {option_type} FROM user_pool WHERE chat_id = (?) AND ticker = (?)"
         args = (chat_id, ticker)
-        return [x[0] for x in self.conn.execute(stmt, args)][0]
+        try:
+            return [x[0] for x in self.conn.execute(stmt, args)][0]
+        except Exception as e:
+            print(f'Could not get options for: {chat_id}, {ticker}, {option_type}')
 
     def update_option(self, chat_id, ticker, option_type, value):
         stmt = f"UPDATE user_pool SET {option_type} = (?) WHERE chat_id = (?) AND ticker = (?)"
