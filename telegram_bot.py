@@ -44,6 +44,7 @@ flyingMoney = '💸'
 clock = '⏱'
 arrowDown = '🔻'
 arrowUp = '🔺'
+star = '⭐'
 
 
 def get_url(url):
@@ -745,11 +746,11 @@ def handle_epoch_summary(data):
     last_epoch = data['epoch']
     wins = data['w']
     losses = data['l']
-    blocks_minted = data['blocks']
+    blocks_minted = int(data['blocks'])
     epoch_slots = data['epochSlots']
     if epoch_slots:
         if blocks_minted == epoch_slots:
-            blocks_created_text = f'/ {epoch_slots} ⭐'
+            blocks_created_text = f'/ {epoch_slots} {star}'
         else:
             blocks_created_text = f'/ {epoch_slots}'
     else:
