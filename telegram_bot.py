@@ -22,7 +22,7 @@ session = boto3.Session(profile_name='bot_iam')
 sqs = boto3.client('sqs')
 queue_url = 'https://sqs.us-west-2.amazonaws.com/637019325511/pooltoolevents.fifo'
 
-# current_epoch = 0
+options_string_builder = {}
 
 lightning = '⚡'
 fire = '🔥'
@@ -104,36 +104,17 @@ def handle_help(chat):
               "*Options for each pool:*\n" \
               "You can choose which notifications you want for each pool\n" \
               "\n" \
-              "/OPTION \\[POOL TICKER] \\[OPTION TYPE] \\[VALUE]\n" \
+              "/OPTION \\[POOL TICKER]\n" \
               "\n" \
               "For more info about using option, enter /OPTION"
     send_message(message, chat)
 
 
 def handle_option_help(chat):
-    message = "*Change options for a pool:*\n" \
+    message = "*Change or see current options for a pool:*\n" \
               "\n" \
-              "Usage: /OPTION \\[POOL TICKER] \\[OPTION TYPE] \\[VALUE]\n" \
-              "Example: /OPTION KUNO block\\_minted 0\n" \
-              "\n" \
-              "\\[POOL TICKER] is the ticker of one pool from your list\n" \
-              "\n" \
-              "\\[OPTION TYPE] is the notification type:\n" \
-              "- block\\_minted: notifies for new blocks created\n" \
-              "- battle: notifies about battles\n" \
-              "- sync\\_status: notifies if pool is out of sync, or back in sync\n" \
-              "- block\\_adjustment: notifies if the amount of blocks created has been changed\n" \
-              "- stake\\_change: notifies if the stake has changed\n" \
-              "\n" \
-              "\\[VALUE] is the to enable/disable the notification:\n" \
-              "- 0: Disable\n" \
-              "- 1: Enable\n" \
-              "\n" \
-              "\n" \
-              "*Get current options for a pool:*\n" \
-              "\n" \
-              "Usage: /OPTION \\[POOL TICKER] GET\n" \
-              "Example: /OPTION KUNO GET"
+              "Usage: /OPTION \\[POOL TICKER]\n" \
+              "Example: /OPTION KUNO"
     send_message(message, chat)
 
 
@@ -240,6 +221,7 @@ def validate_option_get(chat, text, tickers):
 
 
 def get_current_options(chat, text):
+    text = text.split(' ')
     options_string = f'\\[ {text[1]} ] Options:\n' \
                      f'\n' \
                      f"block\\_minted: {db.get_option(chat, text[1], 'block_minted')}\n" \
@@ -250,7 +232,69 @@ def get_current_options(chat, text):
     return options_string
 
 
+def validate_option_type(type):
+    options = ['SEE OPTIONS', 'BLOCK_MINTED', 'BATTLE', 'SYNC_STATUS', 'BLOCK_ADJUSTMENT', 'STAKE_CHANGE']
+    if type in options:
+        return True
+    return False
+
+
+def send_option_type(chat):
+    options = ['SEE OPTIONS', 'BLOCK_MINTED', 'BATTLE', 'SYNC_STATUS', 'BLOCK_ADJUSTMENT', 'STAKE_CHANGE']
+    keyboard = build_keyboard(options)
+    send_message('Select option to change', chat, keyboard)
+
+
+def validate_option_state(type):
+    states = ['ENABLE', 'DISABLE']
+    if type in states:
+        return True
+    return False
+
+
+def send_option_state(chat):
+    states = ['ENABLE', 'DISABLE']
+    keyboard = build_keyboard(states)
+    send_message('Select new state', chat, keyboard)
+
+
 def handle_option(chat, text, tickers):
+    text = text.split(' ')
+    if text[0] == '/OPTION':
+        if len(text) == 2:
+            if text[1] in tickers:
+                options_string_builder[chat] = {}
+                options_string_builder[chat]['string'] = ' '.join(text)
+                options_string_builder[chat]['next'] = 'option_type'
+                send_option_type(chat)
+        elif len(text) == 3:
+            ticker = ' '.join([text[1], text[2]])
+            if ticker in tickers:
+                options_string_builder[chat] = {}
+                options_string_builder[chat]['string'] = ' '.join(text)
+                options_string_builder[chat]['next'] = 'option_type'
+                send_option_type(chat)
+
+    # if len(text) > 2:
+    #     if text[2].isdigit(): # Assuming we work with a duplicate ticker
+    #         new_list = []
+    #         if len(text) == 4:
+    #             new_list.extend([text[0], ' '.join([text[1], text[2]]), text[3]])
+    #         elif len(text) == 5:
+    #             new_list.extend([text[0], ' '.join([text[1], text[2]]), text[3], text[4]])
+    #         text = new_list
+    # if validate_option_usage(chat, text, tickers):
+    #     db.update_option(chat, text[1], text[2], text[3])
+    # elif validate_option_get(chat, text, tickers):
+    #     message = get_current_options(chat, text)
+    #     send_message(message, chat)
+    # else:
+    #     message = "Something is wrong!\n" \
+    #               "Either to many, or to few arguments"
+    #     send_message(message, chat)
+
+
+def update_option(chat, text):
     text = text.split(' ')
     if len(text) > 2:
         if text[2].isdigit(): # Assuming we work with a duplicate ticker
@@ -260,15 +304,39 @@ def handle_option(chat, text, tickers):
             elif len(text) == 5:
                 new_list.extend([text[0], ' '.join([text[1], text[2]]), text[3], text[4]])
             text = new_list
-    if validate_option_usage(chat, text, tickers):
-        db.update_option(chat, text[1], text[2], text[3])
-    elif validate_option_get(chat, text, tickers):
-        message = get_current_options(chat, text)
-        send_message(message, chat)
-    else:
-        message = "Something is wrong!\n" \
-                  "Either to many, or to few arguments"
-        send_message(message, chat)
+    db.update_option(chat, text[1], text[2], text[3])
+
+
+def handle_next_option_step(chat, text):
+    next_step = options_string_builder[chat]['next']
+    if next_step == 'option_type':
+        if validate_option_type(text):
+            if text == 'SEE OPTIONS':
+                message = get_current_options(chat, options_string_builder[chat]['string'])
+                send_message(message, chat)
+                del options_string_builder[chat]
+                return
+            options_string_builder[chat]['string'] = ' '.join([options_string_builder[chat]['string'], text])
+            options_string_builder[chat]['next'] = 'option_state'
+            send_option_state(chat)
+        else:
+            message = "Not a possible option type, try again!"
+            send_message(message, chat)
+            send_option_type(chat)
+    elif next_step == 'option_state':
+        if validate_option_state(text):
+            if text == 'ENABLE':
+                options_string_builder[chat]['string'] = ' '.join([options_string_builder[chat]['string'], '1'])
+            elif text == 'DISABLE':
+                options_string_builder[chat]['string'] = ' '.join([options_string_builder[chat]['string'], '0'])
+            update_option(chat, options_string_builder[chat]['string'])
+            message = get_current_options(chat, options_string_builder[chat]['string'])
+            send_message(message, chat)
+            del options_string_builder[chat]
+        else:
+            message = "Not a possible option state, try again!"
+            send_message(message, chat)
+            send_option_state(chat)
 
 
 def handle_updates(updates):
@@ -281,6 +349,9 @@ def handle_updates(updates):
                 text = update["message"]["text"].upper()
                 chat = update["message"]["chat"]["id"]
                 tickers = db.get_tickers_from_chat_id(chat)
+                if chat in options_string_builder:
+                    handle_next_option_step(chat, text)
+                    continue
                 if text == "/DELETE":
                     if not tickers:
                         send_message("No TICKERs added", chat)
@@ -325,7 +396,7 @@ def get_last_chat_id_and_text(updates):
 
 def build_keyboard(items):
     keyboard = [[item] for item in items]
-    reply_markup = {"keyboard": keyboard, "one_time_keyboard": False}
+    reply_markup = {"keyboard": keyboard, "one_time_keyboard": True}
     return json.dumps(reply_markup)
 
 
@@ -654,8 +725,8 @@ def handle_epoch_summary(data):
     rewards_stakers = data['value_for_stakers']
     rewards_tax = data['value_taxed']
     last_epoch = data['epoch']
-    not_used_delegations, blocks_minted, new_last_block_epoch = update_livestats(pool_id)
-    wins, losses = update_competitive_win_loss(pool_id, last_epoch)
+    # not_used_delegations, blocks_minted, new_last_block_epoch = update_livestats(pool_id)
+    # wins, losses = update_competitive_win_loss(pool_id, last_epoch)
     chat_ids = db.get_chat_ids_from_pool_id(pool_id)
     for chat_id in chat_ids:
         ticker = db.get_ticker_from_pool_id(pool_id)[0]
