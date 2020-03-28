@@ -222,15 +222,22 @@ def validate_option_get(chat, text, tickers):
     return True
 
 
+def convert_to_on_off(value):
+    if value:
+        return 'On'
+    else:
+        return 'Off'
+
+
 def get_current_options(chat, text):
     text = text.split(' ')
     options_string = f'\\[ {text[1]} ] Options:\n' \
                      f'\n' \
-                     f"block\\_minted: {db.get_option(chat, text[1], 'block_minted')}\n" \
-                     f"battle: {db.get_option(chat, text[1], 'battle')}\n" \
-                     f"sync\\_status: {db.get_option(chat, text[1], 'sync_status')}\n" \
-                     f"block\\_adjustment: {db.get_option(chat, text[1], 'block_adjustment')}\n" \
-                     f"stake\\_change: {db.get_option(chat, text[1], 'stake_change')}"
+                     f"block\\_minted: {convert_to_on_off(db.get_option(chat, text[1], 'block_minted'))}\n" \
+                     f"battle: {convert_to_on_off(db.get_option(chat, text[1], 'battle'))}\n" \
+                     f"sync\\_status: {convert_to_on_off(db.get_option(chat, text[1], 'sync_status'))}\n" \
+                     f"block\\_adjustment: {convert_to_on_off(db.get_option(chat, text[1], 'block_adjustment'))}\n" \
+                     f"stake\\_change: {convert_to_on_off(db.get_option(chat, text[1], 'stake_change'))}"
     return options_string
 
 
@@ -736,16 +743,26 @@ def handle_epoch_summary(data):
     rewards_stakers = data['value_for_stakers']
     rewards_tax = data['value_taxed']
     last_epoch = data['epoch']
-    # not_used_delegations, blocks_minted, new_last_block_epoch = update_livestats(pool_id)
-    # wins, losses = update_competitive_win_loss(pool_id, last_epoch)
+    wins = data['w']
+    losses = data['l']
+    blocks_minted = data['blocks']
+    epoch_slots = data['epochSlots']
+    if epoch_slots:
+        if blocks_minted == epoch_slots:
+            blocks_created_text = f'/ {epoch_slots} ⭐'
+        else:
+            blocks_created_text = f'/ {epoch_slots}'
+    else:
+        blocks_created_text = ''
+
     chat_ids = db.get_chat_ids_from_pool_id(pool_id)
     for chat_id in chat_ids:
         ticker = db.get_ticker_from_pool_id(pool_id)[0]
-        # f'{tools} Blocks created: {blocks_minted}\n' \
-        # f'{swords} Slot battles: {wins}/{wins + losses}\n' \
         message = f'\\[ {ticker} ] Epoch {last_epoch} stats {globe}\n' \
                   f'\n' \
                   f'{meat} Live stake {set_prefix(delegations)}\n' \
+                  f"{tools} Blocks created: {blocks_minted} {blocks_created_text}\n" \
+                  f'{swords} Slot battles: {wins}/{wins + losses}\n' \
                   f'\n' \
                   f'{moneyBag} Stakers rewards: {set_prefix(rewards_stakers / 1000000)}\n' \
                   f'{flyingMoney} Tax rewards: {set_prefix(rewards_tax / 1000000)}\n' \
