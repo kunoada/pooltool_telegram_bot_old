@@ -282,6 +282,9 @@ def handle_option(chat, text, tickers):
             else:
                 message = 'Ticker is not in your list of pools'
                 send_message(message, chat)
+        else:
+            message = "To many arguments!"
+            send_message(message, chat)
 
     # if len(text) > 2:
     #     if text[2].isdigit(): # Assuming we work with a duplicate ticker
