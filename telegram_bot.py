@@ -658,6 +658,10 @@ def handle_battle(data):
 def handle_wallet_poolchange(data):
     with open('wallet_poolchange', 'w') as f:
         f.write(json.dumps(data))
+    pool_id = data['pool']
+    if 'ticker' in data['change']:
+        new_ticker = data['change']['ticker']['new_value']
+        db.update_ticker(pool_id, new_ticker)
 
 
 def handle_wallet_newpool(data):
