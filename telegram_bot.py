@@ -45,6 +45,7 @@ clock = '⏱'
 arrowDown = '🔻'
 arrowUp = '🔺'
 star = '⭐'
+dice = '🎲'
 
 
 def get_url(url):
@@ -777,6 +778,22 @@ def handle_epoch_summary(data):
         send_message(message, chat_id)
 
 
+def handle_slot_loaded(data):
+    pool_id = data['pool']
+    epoch = data['epoch']
+    slots_assigned = data['epochSlots']
+    last_epoch_validated = data['verifiedPreviousEpoch']
+    chat_ids = db.get_chat_ids_from_pool_id(pool_id)
+    for chat_id in chat_ids:
+        ticker = db.get_ticker_from_pool_id(pool_id)[0]
+        # if db.get_option(chat_id, ticker, 'sync_status'):
+        message = f'\\[ {ticker} ] Epoch {epoch} {dice}\n' \
+                  f'\n' \
+                  f'Blocks assigned: {slots_assigned}\n' \
+                  f'Last epoch validated: {last_epoch_validated}'
+        send_message(message, chat_id)
+
+
 def start_telegram_notifier():
     while True:
         event = get_aws_event()
@@ -808,6 +825,8 @@ def start_telegram_notifier():
             elif body['type'] == 'epoch_summary':
                 handle_epoch_summary(data)
                 continue
+            elif body['type'] == 'slots_loaded':
+                handle_slot_loaded(data)
 
         time.sleep(0.5)
 
