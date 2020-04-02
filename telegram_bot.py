@@ -297,13 +297,14 @@ def handle_option(chat, text, tickers):
 
 def adjust_string_if_duplicate(text):
     list = text.split(' ')
-    if list[2].isdigit():  # Assuming we work with a duplicate ticker
-        new_list = []
-        if len(list) == 4:
-            new_list.extend([list[0], ' '.join([list[1], list[2]]), list[3]])
-        elif len(list) == 5:
-            new_list.extend([list[0], ' '.join([list[1], list[2]]), list[3], list[4]])
-        return new_list
+    if len(list) > 2:
+        if list[2].isdigit():  # Assuming we work with a duplicate ticker
+            new_list = []
+            if len(list) == 4:
+                new_list.extend([list[0], ' '.join([list[1], list[2]]), list[3]])
+            elif len(list) == 5:
+                new_list.extend([list[0], ' '.join([list[1], list[2]]), list[3], list[4]])
+            return new_list
     else:
         return list
 
@@ -317,7 +318,7 @@ def handle_next_option_step(chat, text):
     if next_step == 'option_type':
         if validate_option_type(text):
             if text == 'SEE OPTIONS':
-                message = get_current_options(chat, options_string_builder[chat]['string'])
+                message = get_current_options(chat, adjust_string_if_duplicate(options_string_builder[chat]['string']))
                 send_message(message, chat)
                 del options_string_builder[chat]
                 return
