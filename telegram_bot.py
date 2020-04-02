@@ -232,7 +232,6 @@ def convert_to_on_off(value):
 
 
 def get_current_options(chat, text):
-    text = text.split(' ')
     options_string = f'\\[ {text[1]} ] Options:\n' \
                      f'\n' \
                      f"block\\_minted: {convert_to_on_off(db.get_option(chat, text[1], 'block_minted'))}\n" \
@@ -295,35 +294,21 @@ def handle_option(chat, text, tickers):
             message = "To many arguments!"
             send_message(message, chat)
 
-    # if len(text) > 2:
-    #     if text[2].isdigit(): # Assuming we work with a duplicate ticker
-    #         new_list = []
-    #         if len(text) == 4:
-    #             new_list.extend([text[0], ' '.join([text[1], text[2]]), text[3]])
-    #         elif len(text) == 5:
-    #             new_list.extend([text[0], ' '.join([text[1], text[2]]), text[3], text[4]])
-    #         text = new_list
-    # if validate_option_usage(chat, text, tickers):
-    #     db.update_option(chat, text[1], text[2], text[3])
-    # elif validate_option_get(chat, text, tickers):
-    #     message = get_current_options(chat, text)
-    #     send_message(message, chat)
-    # else:
-    #     message = "Something is wrong!\n" \
-    #               "Either to many, or to few arguments"
-    #     send_message(message, chat)
+
+def adjust_string_if_duplicate(text):
+    list = text.split(' ')
+    if list[2].isdigit():  # Assuming we work with a duplicate ticker
+        new_list = []
+        if len(list) == 4:
+            new_list.extend([list[0], ' '.join([list[1], list[2]]), list[3]])
+        elif len(list) == 5:
+            new_list.extend([list[0], ' '.join([list[1], list[2]]), list[3], list[4]])
+        return new_list
+    else:
+        return list
 
 
 def update_option(chat, text):
-    text = text.split(' ')
-    if len(text) > 2:
-        if text[2].isdigit(): # Assuming we work with a duplicate ticker
-            new_list = []
-            if len(text) == 4:
-                new_list.extend([text[0], ' '.join([text[1], text[2]]), text[3]])
-            elif len(text) == 5:
-                new_list.extend([text[0], ' '.join([text[1], text[2]]), text[3], text[4]])
-            text = new_list
     db.update_option(chat, text[1], text[2], text[3])
 
 
@@ -349,8 +334,8 @@ def handle_next_option_step(chat, text):
                 options_string_builder[chat]['string'] = ' '.join([options_string_builder[chat]['string'], '1'])
             elif text == 'DISABLE':
                 options_string_builder[chat]['string'] = ' '.join([options_string_builder[chat]['string'], '0'])
-            update_option(chat, options_string_builder[chat]['string'])
-            message = get_current_options(chat, options_string_builder[chat]['string'])
+            update_option(chat, adjust_string_if_duplicate(options_string_builder[chat]['string']))
+            message = get_current_options(chat, adjust_string_if_duplicate(options_string_builder[chat]['string']))
             send_message(message, chat)
             del options_string_builder[chat]
         else:
