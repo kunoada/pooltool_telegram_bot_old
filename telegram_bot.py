@@ -764,7 +764,7 @@ def handle_epoch_summary(data):
 
 
 def handle_slot_loaded(data):
-    pool_id = data['pool']
+    pool_id = data['poolid']
     epoch = data['epoch']
     slots_assigned = data['epochSlots']
     last_epoch_validated = data['verifiedPreviousEpoch']
