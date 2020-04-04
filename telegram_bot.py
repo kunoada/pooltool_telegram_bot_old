@@ -305,8 +305,7 @@ def adjust_string_if_duplicate(text):
             elif len(list) == 5:
                 new_list.extend([list[0], ' '.join([list[1], list[2]]), list[3], list[4]])
             return new_list
-    else:
-        return list
+    return list
 
 
 def update_option(chat, text):
@@ -738,12 +737,12 @@ def handle_epoch_summary(data):
     wins = data['w']
     losses = data['l']
     blocks_minted = int(data['blocks'])
-    epoch_slots = data['epochSlots']
+    epoch_slots = int(data['epochSlots'])
     if epoch_slots:
         if blocks_minted == epoch_slots:
-            blocks_created_text = f'/ {epoch_slots} {star}'
+            blocks_created_text = f'/{epoch_slots} {star}'
         else:
-            blocks_created_text = f'/ {epoch_slots}'
+            blocks_created_text = f'/{epoch_slots}'
     else:
         blocks_created_text = ''
 
@@ -753,11 +752,11 @@ def handle_epoch_summary(data):
         message = f'\\[ {ticker} ] Epoch {last_epoch} stats {globe}\n' \
                   f'\n' \
                   f'{meat} Live stake {set_prefix(delegations)}\n' \
-                  f"{tools} Blocks created: {blocks_minted} {blocks_created_text}\n" \
+                  f"{tools} Blocks created: {blocks_minted}{blocks_created_text}\n" \
                   f'{swords} Slot battles: {wins}/{wins + losses}\n' \
                   f'\n' \
-                  f'{moneyBag} Stakers rewards: {set_prefix(rewards_stakers / 1000000)}\n' \
-                  f'{flyingMoney} Tax rewards: {set_prefix(rewards_tax / 1000000)}\n' \
+                  f'{moneyBag} Stakers rewards: {set_prefix(rewards_stakers / 1000000)} ADA\n' \
+                  f'{flyingMoney} Tax rewards: {set_prefix(round(rewards_tax / 1000000))} ADA\n' \
                   f'\n' \
                   f'More info at:\n' \
                   f'https://pooltool.io/pool/{pool_id}/'
