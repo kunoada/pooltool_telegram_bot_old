@@ -3,6 +3,7 @@ import requests
 import time
 import urllib
 import threading
+import math
 
 import boto3
 import pprint
@@ -731,8 +732,9 @@ def handle_sync_status(data):
 def handle_epoch_summary(data):
     pool_id = data['pool']
     delegations = data['blockstake'] / 1000000
-    rewards_stakers = data['value_for_stakers']
-    rewards_tax = data['value_taxed']
+    rewards_stakers = data['value_for_stakers'] / 1000000
+    rewards_tax = data['value_taxed'] / 1000000
+    blockstake = data['blockstake'] / 1000000
     last_epoch = data['epoch']
     wins = data['w']
     losses = data['l']
@@ -755,9 +757,11 @@ def handle_epoch_summary(data):
                   f"{tools} Blocks created: {blocks_minted}{blocks_created_text}\n" \
                   f'{swords} Slot battles: {wins}/{wins + losses}\n' \
                   f'\n' \
-                  f'{moneyBag} Stakers rewards: {set_prefix(rewards_stakers / 1000000)} ADA\n' \
-                  f'{flyingMoney} Tax rewards: {set_prefix(round(rewards_tax / 1000000))} ADA\n' \
+                  f'{moneyBag} Stakers rewards: {set_prefix(rewards_stakers)} ADA\n' \
+                  f'{flyingMoney} Tax rewards: {set_prefix(round(rewards_tax))} ADA\n' \
                   f'\n' \
+                  f'Current ROS: {round(math.pow((rewards_stakers / blockstake) + 1, 365) - 1, 2)}%' \
+                  f'' \
                   f'More info at:\n' \
                   f'https://pooltool.io/pool/{pool_id}/'
         send_message(message, chat_id)
