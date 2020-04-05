@@ -765,8 +765,8 @@ def handle_epoch_summary(data):
                   f'{moneyBag} Stakers rewards: {set_prefix(rewards_stakers)} ADA\n' \
                   f'{flyingMoney} Tax rewards: {set_prefix(round(rewards_tax))} ADA\n' \
                   f'\n' \
-                  f'Current ROS: {current_ros}%' \
-                  f'' \
+                  f'Current ROS: {current_ros}%\n' \
+                  f'\n' \
                   f'More info at:\n' \
                   f'https://pooltool.io/pool/{pool_id}/'
         send_message(message, chat_id)
