@@ -739,7 +739,7 @@ def handle_epoch_summary(data):
     wins = data['w']
     losses = data['l']
     blocks_minted = int(data['blocks'])
-    epoch_slots = int(data['epochSlots'])
+    epoch_slots = data['epochSlots']
     if epoch_slots:
         if blocks_minted == epoch_slots:
             blocks_created_text = f'/{epoch_slots} {star}'
@@ -747,6 +747,11 @@ def handle_epoch_summary(data):
             blocks_created_text = f'/{epoch_slots}'
     else:
         blocks_created_text = ''
+
+    if epoch_slots is not None:
+        current_ros = round(math.pow((rewards_stakers / blockstake) + 1, 365) - 1, 2)
+    else:
+        current_ros = 0
 
     chat_ids = db.get_chat_ids_from_pool_id(pool_id)
     for chat_id in chat_ids:
@@ -760,7 +765,7 @@ def handle_epoch_summary(data):
                   f'{moneyBag} Stakers rewards: {set_prefix(rewards_stakers)} ADA\n' \
                   f'{flyingMoney} Tax rewards: {set_prefix(round(rewards_tax))} ADA\n' \
                   f'\n' \
-                  f'Current ROS: {round(math.pow((rewards_stakers / blockstake) + 1, 365) - 1, 2)}%' \
+                  f'Current ROS: {current_ros}%' \
                   f'' \
                   f'More info at:\n' \
                   f'https://pooltool.io/pool/{pool_id}/'
