@@ -749,7 +749,7 @@ def handle_epoch_summary(data):
         blocks_created_text = ''
 
     if blockstake:
-        current_ros = round(math.pow((rewards_stakers / blockstake) + 1, 365) - 1, 2)
+        current_ros = round((math.pow((rewards_stakers / blockstake) + 1, 365) - 1) * 100, 2)
     else:
         current_ros = 0
 
