@@ -731,7 +731,7 @@ def handle_sync_status(data):
 
 def handle_epoch_summary(data):
     pool_id = data['pool']
-    delegations = data['blockstake'] / 1000000
+    delegations = data['liveStake'] / 1000000
     rewards_stakers = data['value_for_stakers'] / 1000000
     rewards_tax = data['value_taxed'] / 1000000
     blockstake = data['blockstake'] / 1000000
@@ -748,7 +748,7 @@ def handle_epoch_summary(data):
     else:
         blocks_created_text = ''
 
-    if epoch_slots is not None:
+    if blockstake:
         current_ros = round(math.pow((rewards_stakers / blockstake) + 1, 365) - 1, 2)
     else:
         current_ros = 0
@@ -756,6 +756,7 @@ def handle_epoch_summary(data):
     chat_ids = db.get_chat_ids_from_pool_id(pool_id)
     for chat_id in chat_ids:
         ticker = db.get_ticker_from_pool_id(pool_id)[0]
+        print(f'{ticker}: {current_ros}% --- rewards_stakers: {rewards_stakers}, blockstake: {blockstake}')
         message = f'\\[ {ticker} ] Epoch {last_epoch} stats {globe}\n' \
                   f'\n' \
                   f'{meat} Live stake {set_prefix(delegations)}\n' \
