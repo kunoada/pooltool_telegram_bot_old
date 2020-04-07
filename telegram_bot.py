@@ -246,6 +246,7 @@ def get_current_options(chat, text):
                          f"block\\_adjustment: {convert_option_value(db.get_option(chat, text[1], 'block_adjustment'))}\n" \
                          f"stake\\_change: {convert_option_value(db.get_option(chat, text[1], 'stake_change'))}"
         return options_string
+    return ''
 
 
 def validate_option_type(type):
@@ -324,7 +325,8 @@ def handle_next_option_step(chat, text):
         if validate_option_type(text):
             if text == 'SEE OPTIONS':
                 message = get_current_options(chat, adjust_string_if_duplicate(options_string_builder[chat]['string']))
-                send_message(message, chat)
+                if not message == '':
+                    send_message(message, chat)
                 del options_string_builder[chat]
                 return
             options_string_builder[chat]['string'] = ' '.join([options_string_builder[chat]['string'], text])
