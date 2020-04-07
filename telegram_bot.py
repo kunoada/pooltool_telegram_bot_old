@@ -95,7 +95,9 @@ def handle_start(chat):
               "\n" \
               "For more information, enter \"/HELP\"\n" \
               "\n" \
-              "This pooltool bot was created for pooltool by KUNO stakepool"
+              "This pooltool bot was created for pooltool by KUNO stakepool\n" \
+              "\n" \
+              "*NOTE: This Bot is not case sensitive! text in upper- and lower case work!*"
     send_message(message, chat)
 
 
@@ -107,7 +109,7 @@ def handle_help(chat):
               "\n" \
               "\n" \
               "*Options for each pool:*\n" \
-              "You can choose which notifications you want for each pool\n" \
+              "You can enable/disable/silent each specific notification you want for each pool on your list\n" \
               "\n" \
               "/OPTION \\[POOL TICKER]\n" \
               "\n" \
