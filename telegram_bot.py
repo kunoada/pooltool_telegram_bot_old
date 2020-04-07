@@ -783,7 +783,7 @@ def handle_epoch_summary(data):
     losses = data['l']
     blocks_minted = int(data['blocks'])
     epoch_slots = data['epochSlots']
-    if epoch_slots >= 0:
+    if epoch_slots:
         if blocks_minted == epoch_slots and epoch_slots > 0:
             blocks_created_text = f'/{epoch_slots} {star}'
         else:
