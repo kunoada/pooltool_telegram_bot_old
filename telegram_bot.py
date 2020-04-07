@@ -237,14 +237,15 @@ def convert_option_value(value):
 
 
 def get_current_options(chat, text):
-    options_string = f'\\[ {text[1]} ] Options:\n' \
-                     f'\n' \
-                     f"block\\_minted: {convert_option_value(db.get_option(chat, text[1], 'block_minted'))}\n" \
-                     f"battle: {convert_option_value(db.get_option(chat, text[1], 'battle'))}\n" \
-                     f"sync\\_status: {convert_option_value(db.get_option(chat, text[1], 'sync_status'))}\n" \
-                     f"block\\_adjustment: {convert_option_value(db.get_option(chat, text[1], 'block_adjustment'))}\n" \
-                     f"stake\\_change: {convert_option_value(db.get_option(chat, text[1], 'stake_change'))}"
-    return options_string
+    if len(text) > 1:
+        options_string = f'\\[ {text[1]} ] Options:\n' \
+                         f'\n' \
+                         f"block\\_minted: {convert_option_value(db.get_option(chat, text[1], 'block_minted'))}\n" \
+                         f"battle: {convert_option_value(db.get_option(chat, text[1], 'battle'))}\n" \
+                         f"sync\\_status: {convert_option_value(db.get_option(chat, text[1], 'sync_status'))}\n" \
+                         f"block\\_adjustment: {convert_option_value(db.get_option(chat, text[1], 'block_adjustment'))}\n" \
+                         f"stake\\_change: {convert_option_value(db.get_option(chat, text[1], 'stake_change'))}"
+        return options_string
 
 
 def validate_option_type(type):
