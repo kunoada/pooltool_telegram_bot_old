@@ -36,6 +36,11 @@ class DBHelper:
         except Exception as err:
             print("Assuming db is already migrated")
 
+        try:
+            self.new_columns()
+        except Exception as err:
+            print("Assuming new columns is already migrated")
+
     def get_chat_ids(self):
         stmt = "SELECT chat_id FROM users"
         args = ()
@@ -117,6 +122,13 @@ class DBHelper:
 
         self.conn.commit()
 
+    def new_columns(self):
+        stmt = "ALTER TABLE user_pool ADD epoch_summary INTEGER DEFAULT 1"
+        self.conn.execute(stmt)
+        stmt = "ALTER TABLE user_pool ADD slot_loaded INTEGER DEFAULT 1"
+        self.conn.execute(stmt)
+        self.conn.commit()
+
     def migrate_db(self):
         stmt = "insert into users (chat_id) select distinct(chat_id) from items"
         self.conn.execute(stmt)
@@ -124,6 +136,4 @@ class DBHelper:
         self.conn.execute(stmt)
         stmt = "insert into user_pool (chat_id,pool_id, ticker) select distinct chat_id, pool_id, ticker from items"
         self.conn.execute(stmt)
-
         self.conn.commit()
-    
