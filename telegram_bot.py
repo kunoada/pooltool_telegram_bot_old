@@ -421,7 +421,7 @@ def send_message(text, chat_id, reply_markup=None, silent=None, disable_web_prev
     if reply_markup:
         url += "&reply_markup={}".format(reply_markup)
     if silent:
-        url += f"&silent={silent}"
+        url += f"&disable_notification={silent}"
     if disable_web_preview:
         url += f"&disable_web_page_preview={disable_web_preview}"
     get_url(url)
