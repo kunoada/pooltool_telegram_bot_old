@@ -415,13 +415,15 @@ def build_keyboard(items):
     return json.dumps(reply_markup)
 
 
-def send_message(text, chat_id, reply_markup=None, silent=None):
+def send_message(text, chat_id, reply_markup=None, silent=None, disable_web_preview=None):
     text = urllib.parse.quote_plus(text)
     url = URL + "sendMessage?text={}&chat_id={}&parse_mode=Markdown".format(text, chat_id)
     if reply_markup:
         url += "&reply_markup={}".format(reply_markup)
     if silent:
         url += f"&silent={silent}"
+    if disable_web_preview:
+        url += f"&disable_web_page_preview={disable_web_preview}"
     get_url(url)
 
 
@@ -646,9 +648,9 @@ def handle_battle(data):
                               f'\n' \
                               f'https://pooltool.io/competitive'
                     if message_type == 2:
-                        send_message(message, chat_id, silent=True)
+                        send_message(message, chat_id, silent=True, disable_web_preview=True)
                     else:
-                        send_message(message, chat_id)
+                        send_message(message, chat_id, disable_web_preview=True)
         else:
             chat_ids = db.get_chat_ids_from_pool_id(player['pool'])
             for chat_id in chat_ids:
@@ -662,9 +664,9 @@ def handle_battle(data):
                               f'\n' \
                               f'https://pooltool.io/competitive'
                     if message_type == 2:
-                        send_message(message, chat_id, silent=True)
+                        send_message(message, chat_id, silent=True, disable_web_preview=True)
                     else:
-                        send_message(message, chat_id)
+                        send_message(message, chat_id, disable_web_preview=True)
 
 
 def handle_wallet_poolchange(data):
