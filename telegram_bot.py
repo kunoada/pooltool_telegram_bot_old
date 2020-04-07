@@ -206,28 +206,30 @@ def validate_option_usage(chat, text, tickers):
     return True
 
 
-def validate_option_get(chat, text, tickers):
-    if len(text) == 3:
-        if not text[0] == "/OPTION":
-            message = 'Option is not the first argument'
-            send_message(message, chat)
-            return False
-        if not text[1] in tickers:
-            message = 'Ticker is not in your list of pools'
-            send_message(message, chat)
-            return False
-        if not text[2] == 'GET':
-            message = 'Unknown option type'
-            send_message(message, chat)
-            return False
-    else:
-        return False
-    return True
+# def validate_option_get(chat, text, tickers):
+#     if len(text) == 3:
+#         if not text[0] == "/OPTION":
+#             message = 'Option is not the first argument'
+#             send_message(message, chat)
+#             return False
+#         if not text[1] in tickers:
+#             message = 'Ticker is not in your list of pools'
+#             send_message(message, chat)
+#             return False
+#         if not text[2] == 'GET':
+#             message = 'Unknown option type'
+#             send_message(message, chat)
+#             return False
+#     else:
+#         return False
+#     return True
 
 
-def convert_to_on_off(value):
-    if value:
+def convert_option_value(value):
+    if value == 1:
         return 'On'
+    elif value == 2:
+        return 'Silent'
     else:
         return 'Off'
 
@@ -235,11 +237,11 @@ def convert_to_on_off(value):
 def get_current_options(chat, text):
     options_string = f'\\[ {text[1]} ] Options:\n' \
                      f'\n' \
-                     f"block\\_minted: {convert_to_on_off(db.get_option(chat, text[1], 'block_minted'))}\n" \
-                     f"battle: {convert_to_on_off(db.get_option(chat, text[1], 'battle'))}\n" \
-                     f"sync\\_status: {convert_to_on_off(db.get_option(chat, text[1], 'sync_status'))}\n" \
-                     f"block\\_adjustment: {convert_to_on_off(db.get_option(chat, text[1], 'block_adjustment'))}\n" \
-                     f"stake\\_change: {convert_to_on_off(db.get_option(chat, text[1], 'stake_change'))}"
+                     f"block\\_minted: {convert_option_value(db.get_option(chat, text[1], 'block_minted'))}\n" \
+                     f"battle: {convert_option_value(db.get_option(chat, text[1], 'battle'))}\n" \
+                     f"sync\\_status: {convert_option_value(db.get_option(chat, text[1], 'sync_status'))}\n" \
+                     f"block\\_adjustment: {convert_option_value(db.get_option(chat, text[1], 'block_adjustment'))}\n" \
+                     f"stake\\_change: {convert_option_value(db.get_option(chat, text[1], 'stake_change'))}"
     return options_string
 
 
@@ -257,14 +259,14 @@ def send_option_type(chat):
 
 
 def validate_option_state(type):
-    states = ['ENABLE', 'DISABLE']
+    states = ['ENABLE', 'DISABLE', 'SILENT']
     if type in states:
         return True
     return False
 
 
 def send_option_state(chat):
-    states = ['ENABLE', 'DISABLE']
+    states = ['ENABLE', 'DISABLE', 'SILENT']
     keyboard = build_keyboard(states)
     send_message('Select new state', chat, keyboard)
 
@@ -335,6 +337,8 @@ def handle_next_option_step(chat, text):
                 options_string_builder[chat]['string'] = ' '.join([options_string_builder[chat]['string'], '1'])
             elif text == 'DISABLE':
                 options_string_builder[chat]['string'] = ' '.join([options_string_builder[chat]['string'], '0'])
+            elif text == 'SILENT':
+                options_string_builder[chat]['string'] = ' '.join([options_string_builder[chat]['string'], '2'])
             update_option(chat, adjust_string_if_duplicate(options_string_builder[chat]['string']))
             message = get_current_options(chat, adjust_string_if_duplicate(options_string_builder[chat]['string']))
             send_message(message, chat)
@@ -406,11 +410,13 @@ def build_keyboard(items):
     return json.dumps(reply_markup)
 
 
-def send_message(text, chat_id, reply_markup=None):
+def send_message(text, chat_id, reply_markup=None, silent=None):
     text = urllib.parse.quote_plus(text)
     url = URL + "sendMessage?text={}&chat_id={}&parse_mode=Markdown".format(text, chat_id)
     if reply_markup:
         url += "&reply_markup={}".format(reply_markup)
+    if silent:
+        url += f"&silent={silent}"
     get_url(url)
 
 
@@ -540,17 +546,23 @@ def set_prefix(number):
         return si_format(number, precision=2)
 
 
-def check_delegation_changes(chat_id, ticker, delegations, new_delegations):
+def check_delegation_changes(chat_id, ticker, delegations, new_delegations, message_type):
     if delegations > new_delegations:
         message = f'\\[ {ticker} ] Stake decreased 💔\n' \
                   f'-{set_prefix(delegations - new_delegations)}\n' \
                   f'Livestake: {set_prefix(new_delegations)}'
-        send_message(message, chat_id)
+        if message_type == 2:
+            send_message(message, chat_id, silent=True)
+        else:
+            send_message(message, chat_id)
     elif delegations < new_delegations:
         message = f'\\[ {ticker} ] Stake increased 💚\n' \
                   f'+{set_prefix(new_delegations - delegations)}\n' \
                   f'Livestake: {set_prefix(new_delegations)}'
-        send_message(message, chat_id)
+        if message_type == 2:
+            send_message(message, chat_id, silent=True)
+        else:
+            send_message(message, chat_id)
 
 
 def start_telegram_update_handler():
@@ -620,26 +632,34 @@ def handle_battle(data):
             chat_ids = db.get_chat_ids_from_pool_id(player['pool'])
             for chat_id in chat_ids:
                 ticker = db.get_ticker_from_pool_id(player['pool'])[0]
-                if db.get_option(chat_id, ticker, 'battle'):
+                message_type = db.get_option(chat_id, ticker, 'battle')
+                if message_type:
                     message = f'\\[ {ticker} ] You won! {throphy}\n' \
                               f'\n' \
                               f'{swords}{battle_type} battle: {competitors}\n' \
                               f'{brick} Height: {height}\n' \
                               f'\n' \
                               f'https://pooltool.io/competitive'
-                    send_message(message, chat_id)
+                    if message_type == 2:
+                        send_message(message, chat_id, silent=True)
+                    else:
+                        send_message(message, chat_id)
         else:
             chat_ids = db.get_chat_ids_from_pool_id(player['pool'])
             for chat_id in chat_ids:
                 ticker = db.get_ticker_from_pool_id(player['pool'])[0]
-                if db.get_option(chat_id, ticker, 'battle'):
+                message_type = db.get_option(chat_id, ticker, 'battle')
+                if message_type:
                     message = f'\\[ {ticker} ] You lost! {annoyed}\n' \
                               f'\n' \
                               f'{swords} {battle_type} battle: {competitors}\n' \
                               f'{brick} Height: {height}\n' \
                               f'\n' \
                               f'https://pooltool.io/competitive'
-                    send_message(message, chat_id)
+                    if message_type == 2:
+                        send_message(message, chat_id, silent=True)
+                    else:
+                        send_message(message, chat_id)
 
 
 def handle_wallet_poolchange(data):
@@ -676,13 +696,17 @@ def handle_block_minted(data):
     chat_ids = db.get_chat_ids_from_pool_id(pool_id)
     for chat_id in chat_ids:
         ticker = db.get_ticker_from_pool_id(pool_id)[0]
-        if db.get_option(chat_id, ticker, 'block_minted'):
+        message_type = db.get_option(chat_id, ticker, 'block_minted')
+        if message_type:
             message = f'\\[ {ticker} ] New block! {fire}\n' \
                       f'\n' \
                       f'{brick} Height: {height}\n' \
                       f'{clock} Slot: {epoch}.{slot}\n' \
                       f'{tools} Total blocks: {nbe}'
-            send_message(message, chat_id)
+            if message_type == 2:
+                send_message(message, chat_id, silent=True)
+            else:
+                send_message(message, chat_id)
 
 
 def handle_stake_change(data):
@@ -694,8 +718,9 @@ def handle_stake_change(data):
     if chat_ids:
         ticker = db.get_ticker_from_pool_id(pool_id)[0]
         for chat_id in chat_ids:
-            if db.get_option(chat_id, ticker, 'stake_change'):
-                check_delegation_changes(chat_id, ticker, data['old_stake'] / 1000000, data['livestake'] / 1000000)
+            message_type = db.get_option(chat_id, ticker, 'stake_change')
+            if message_type:
+                check_delegation_changes(chat_id, ticker, data['old_stake'] / 1000000, data['livestake'] / 1000000, message_type)
 
 
 def handle_block_adjustment(data):
@@ -704,7 +729,8 @@ def handle_block_adjustment(data):
     current_epoch = get_current_epoch()
     for chat_id in chat_ids:
         ticker = db.get_ticker_from_pool_id(pool_id)[0]
-        if db.get_option(chat_id, ticker, 'block_adjustment'):
+        message_type = db.get_option(chat_id, ticker, 'block_adjustment')
+        if message_type:
             message = f'\\[ {ticker} ] Block adjustment{warning}\n' \
                       f'\n' \
                       f"Total blocks has changed: {data['old_epoch_blocks']} to {data['new_epoch_blocks']}\n" \
@@ -712,7 +738,10 @@ def handle_block_adjustment(data):
                       f"\n" \
                       f"More info:\n" \
                       f"https://pooltool.io/"
-            send_message(message, chat_id)
+            if message_type == 2:
+                send_message(message, chat_id, silent=True)
+            else:
+                send_message(message, chat_id)
 
 
 def handle_sync_status(data):
@@ -720,13 +749,20 @@ def handle_sync_status(data):
     chat_ids = db.get_chat_ids_from_pool_id(pool_id)
     for chat_id in chat_ids:
         ticker = db.get_ticker_from_pool_id(pool_id)[0]
-        if db.get_option(chat_id, ticker, 'sync_status'):
+        message_type = db.get_option(chat_id, ticker, 'sync_status')
+        if message_type:
             if not data['new_status']:
                 message = f'\\[ {ticker} ] Out of sync {alert}'
-                send_message(message, chat_id)
+                if message_type == 2:
+                    send_message(message, chat_id, silent=True)
+                else:
+                    send_message(message, chat_id)
             else:
                 message = f'\\[ {ticker} ] Back in sync {like}'
-                send_message(message, chat_id)
+                if message_type == 2:
+                    send_message(message, chat_id, silent=True)
+                else:
+                    send_message(message, chat_id)
 
 
 def handle_epoch_summary(data):
@@ -740,8 +776,8 @@ def handle_epoch_summary(data):
     losses = data['l']
     blocks_minted = int(data['blocks'])
     epoch_slots = data['epochSlots']
-    if epoch_slots:
-        if blocks_minted == epoch_slots:
+    if epoch_slots >= 0:
+        if blocks_minted == epoch_slots and epoch_slots > 0:
             blocks_created_text = f'/{epoch_slots} {star}'
         else:
             blocks_created_text = f'/{epoch_slots}'
@@ -756,7 +792,6 @@ def handle_epoch_summary(data):
     chat_ids = db.get_chat_ids_from_pool_id(pool_id)
     for chat_id in chat_ids:
         ticker = db.get_ticker_from_pool_id(pool_id)[0]
-        print(f'{ticker}: {current_ros}% --- rewards_stakers: {rewards_stakers}, blockstake: {blockstake}')
         message = f'\\[ {ticker} ] Epoch {last_epoch} stats {globe}\n' \
                   f'\n' \
                   f'{meat} Live stake {set_prefix(delegations)}\n' \
@@ -830,18 +865,18 @@ def main():
     db.setup()
 
     updates_handler = threading.Thread(target=start_telegram_update_handler)
-    notifier = threading.Thread(target=start_telegram_notifier)
+    # notifier = threading.Thread(target=start_telegram_notifier)
 
     updates_handler.start()
-    notifier.start()
+    # notifier.start()
 
     while True:
         if not updates_handler.is_alive():
             updates_handler = threading.Thread(target=start_telegram_update_handler)
             updates_handler.start()
-        if not notifier.is_alive():
-            notifier = threading.Thread(target=start_telegram_notifier)
-            notifier.start()
+        # if not notifier.is_alive():
+        #     notifier = threading.Thread(target=start_telegram_notifier)
+        #     notifier.start()
         time.sleep(5*60)
 
 
