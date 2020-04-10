@@ -326,7 +326,7 @@ def handle_next_option_step(chat, text):
             if text == 'SEE OPTIONS':
                 message = get_current_options(chat, adjust_string_if_duplicate(options_string_builder[chat]['string']))
                 if not message == '':
-                    send_message(message, chat)
+                    send_message(message, chat, remove_keyboard(True))
                 del options_string_builder[chat]
                 return
             options_string_builder[chat]['string'] = ' '.join([options_string_builder[chat]['string'], text])
@@ -413,6 +413,11 @@ def build_keyboard(items):
     keyboard = [[item] for item in items]
     reply_markup = {"keyboard": keyboard, "one_time_keyboard": True}
     return json.dumps(reply_markup)
+
+
+def remove_keyboard(boolean):
+    remove_keyboard_reply = {"RemoveKeyboard": boolean}
+    return json.dumps(remove_keyboard_reply)
 
 
 def send_message(text, chat_id, reply_markup=None, silent=None, disable_web_preview=None):
@@ -630,10 +635,17 @@ def handle_battle(data):
             tickers.append(get_ticker_from_pool_id(player['pool']))
         return ' vs '.join(tickers)
 
+    def which_slot(players):
+        slots = []
+        for player in players:
+            slots.append(get_ticker_from_pool_id(player['slot']))
+        return ' vs '.join(slots)
+
     players = data['players']
     height = data['height']
     battle_type = what_battle_type(players)
     competitors = who_battled(players)
+    slots = which_slot(players)
     for player in data['players']:
         if player['pool'] == data['winner']:
             chat_ids = db.get_chat_ids_from_pool_id(player['pool'])
@@ -644,6 +656,7 @@ def handle_battle(data):
                     message = f'\\[ {ticker} ] You won! {throphy}\n' \
                               f'\n' \
                               f'{swords}{battle_type} battle: {competitors}\n' \
+                              f'{clock} Slot: {slots}\n'\
                               f'{brick} Height: {height}\n' \
                               f'\n' \
                               f'https://pooltool.io/competitive'
