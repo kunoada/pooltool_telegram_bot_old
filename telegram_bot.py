@@ -638,7 +638,7 @@ def handle_battle(data):
     def which_slot(players):
         slots = []
         for player in players:
-            slots.append(get_ticker_from_pool_id(player['slot']))
+            slots.append(player['slot'])
         return ' vs '.join(slots)
 
     players = data['players']
