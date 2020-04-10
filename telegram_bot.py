@@ -375,10 +375,15 @@ def handle_updates(updates):
                     send_message("Select pool to delete", chat, keyboard)
                 elif text == "/START":
                     handle_start(chat)
-                    if 'first_name' in update["message"]["text"]:
-                        name = update["message"]["text"]["first_name"]
+                    if 'username' in update["message"]["from"]:
+                        name = update["message"]["from"]["username"]
                         try:
                             db.add_user(chat, name)
+                        except Exception as e:
+                            print('Assuming user is already added')
+                    else:
+                        try:
+                            db.add_user(chat, None)
                         except Exception as e:
                             print('Assuming user is already added')
                 elif text == "/HELP":
@@ -673,6 +678,7 @@ def handle_battle(data):
                     message = f'\\[ {ticker} ] You lost! {annoyed}\n' \
                               f'\n' \
                               f'{swords} {battle_type} battle: {competitors}\n' \
+                              f'{clock} Slot: {slots}\n'\
                               f'{brick} Height: {height}\n' \
                               f'\n' \
                               f'https://pooltool.io/competitive'
