@@ -24,6 +24,7 @@ sqs = boto3.client('sqs')
 queue_url = 'https://sqs.us-west-2.amazonaws.com/637019325511/pooltoolevents.fifo'
 
 options_string_builder = {}
+options = ['SEE OPTIONS', 'BLOCK_MINTED', 'BATTLE', 'SYNC_STATUS', 'BLOCK_ADJUSTMENT', 'STAKE_CHANGE', 'EPOCH_SUMMARY', 'SLOT_LOADED']
 
 lightning = '⚡'
 fire = '🔥'
@@ -174,7 +175,6 @@ def handle_new_ticker(text, chat):
 
 
 def validate_option_usage(chat, text, tickers):
-    options = ['BLOCK_MINTED', 'BATTLE', 'SYNC_STATUS', 'BLOCK_ADJUSTMENT', 'STAKE_CHANGE']
     if len(text) == 4:
         if not text[0] == "/OPTION":
             message = 'Option is not the first argument'
@@ -220,20 +220,20 @@ def get_current_options(chat, text):
                          f"battle: {convert_option_value(db.get_option(chat, text[1], 'battle'))}\n" \
                          f"sync\\_status: {convert_option_value(db.get_option(chat, text[1], 'sync_status'))}\n" \
                          f"block\\_adjustment: {convert_option_value(db.get_option(chat, text[1], 'block_adjustment'))}\n" \
-                         f"stake\\_change: {convert_option_value(db.get_option(chat, text[1], 'stake_change'))}"
+                         f"stake\\_change: {convert_option_value(db.get_option(chat, text[1], 'stake_change'))}\n" \
+                         f"epoch\\_summary: {convert_option_value(db.get_option(chat, text[1], 'epoch_summary'))}\n" \
+                         f"slot\\_loaded: {convert_option_value(db.get_option(chat, text[1], 'slot_loaded'))}"
         return options_string
     return ''
 
 
 def validate_option_type(type):
-    options = ['SEE OPTIONS', 'BLOCK_MINTED', 'BATTLE', 'SYNC_STATUS', 'BLOCK_ADJUSTMENT', 'STAKE_CHANGE']
     if type in options:
         return True
     return False
 
 
 def send_option_type(chat):
-    options = ['SEE OPTIONS', 'BLOCK_MINTED', 'BATTLE', 'SYNC_STATUS', 'BLOCK_ADJUSTMENT', 'STAKE_CHANGE']
     keyboard = build_keyboard(options)
     send_message('Select option to change', chat, keyboard)
 
@@ -808,20 +808,25 @@ def handle_epoch_summary(data):
     chat_ids = db.get_chat_ids_from_pool_id(pool_id)
     for chat_id in chat_ids:
         ticker = db.get_ticker_from_pool_id(pool_id)[0]
-        message = f'\\[ {ticker} ] Epoch {last_epoch} stats {globe}\n' \
-                  f'\n' \
-                  f'{meat} Live stake {set_prefix(delegations)}\n' \
-                  f"{tools} Blocks created: {blocks_minted}{blocks_created_text}\n" \
-                  f'{swords} Slot battles: {wins}/{wins + losses}\n' \
-                  f'\n' \
-                  f'{moneyBag} Stakers rewards: {set_prefix(rewards_stakers)} ADA\n' \
-                  f'{flyingMoney} Tax rewards: {set_prefix(round(rewards_tax))} ADA\n' \
-                  f'\n' \
-                  f'Current ROS: {current_ros}%\n' \
-                  f'\n' \
-                  f'More info at:\n' \
-                  f'https://pooltool.io/pool/{pool_id}/'
-        send_message(message, chat_id)
+        message_type = db.get_option(chat_id, ticker, 'epoch_summary')
+        if message_type:
+            message = f'\\[ {ticker} ] Epoch {last_epoch} stats {globe}\n' \
+                      f'\n' \
+                      f'{meat} Live stake {set_prefix(delegations)}\n' \
+                      f"{tools} Blocks created: {blocks_minted}{blocks_created_text}\n" \
+                      f'{swords} Slot battles: {wins}/{wins + losses}\n' \
+                      f'\n' \
+                      f'{moneyBag} Stakers rewards: {set_prefix(round(rewards_stakers))} ADA\n' \
+                      f'{flyingMoney} Tax rewards: {set_prefix(round(rewards_tax))} ADA\n' \
+                      f'\n' \
+                      f'Current ROS: {current_ros}%\n' \
+                      f'\n' \
+                      f'More info at:\n' \
+                      f'https://pooltool.io/pool/{pool_id}/'
+            if message_type == 2:
+                send_message(message, chat_id, silent=True)
+            else:
+                send_message(message, chat_id)
 
 
 def handle_slot_loaded(data):
@@ -832,12 +837,16 @@ def handle_slot_loaded(data):
     chat_ids = db.get_chat_ids_from_pool_id(pool_id)
     for chat_id in chat_ids:
         ticker = db.get_ticker_from_pool_id(pool_id)[0]
-        # if db.get_option(chat_id, ticker, 'sync_status'):
-        message = f'\\[ {ticker} ] Epoch {epoch} {dice}\n' \
-                  f'\n' \
-                  f'Blocks assigned: {slots_assigned}\n' \
-                  f'Last epoch validated: {last_epoch_validated}'
-        send_message(message, chat_id)
+        message_type = db.get_option(chat_id, ticker, 'slot_loaded')
+        if message_type:
+            message = f'\\[ {ticker} ] Epoch {epoch} {dice}\n' \
+                      f'\n' \
+                      f'Blocks assigned: {slots_assigned}\n' \
+                      f'Last epoch validated: {last_epoch_validated}'
+            if message_type == 2:
+                send_message(message, chat_id, silent=True)
+            else:
+                send_message(message, chat_id)
 
 
 def start_telegram_notifier():
@@ -881,18 +890,18 @@ def main():
     db.setup()
 
     updates_handler = threading.Thread(target=start_telegram_update_handler)
-    notifier = threading.Thread(target=start_telegram_notifier)
+    # notifier = threading.Thread(target=start_telegram_notifier)
 
     updates_handler.start()
-    notifier.start()
+    # notifier.start()
 
     while True:
         if not updates_handler.is_alive():
             updates_handler = threading.Thread(target=start_telegram_update_handler)
             updates_handler.start()
-        if not notifier.is_alive():
-            notifier = threading.Thread(target=start_telegram_notifier)
-            notifier.start()
+        # if not notifier.is_alive():
+        #     notifier = threading.Thread(target=start_telegram_notifier)
+        #     notifier.start()
         time.sleep(5*60)
 
 
