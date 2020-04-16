@@ -126,15 +126,11 @@ def handle_option_help(chat):
 
 
 def on_ticker_valid(ticker, number, chat, pool_id):
-    # db.add_item(chat, ticker)
     db.add_new_pool(pool_id[number], ticker)
     db.add_new_user_pool(chat, pool_id[number], ticker)
-    # tickers = db.get_tickers(chat)
     tickers = db.get_tickers_from_chat_id(chat)
     message = "List of pools you watch:\n\n" + "\n".join(tickers)
     send_message(message, chat)
-    # data = update_livestats(pool_id[number])
-    # db.update_items(chat, f'{ticker}', pool_id[number], data[0], data[1])
 
 
 def handle_duplicate_ticker(text, chat, pool_id):
@@ -145,10 +141,9 @@ def handle_duplicate_ticker(text, chat, pool_id):
                 text = f'{text[0]} {text[1]}'
                 on_ticker_valid(text, number, chat, pool_id)
             else:
-                raise Exception("Assuming number doesn't fit the provided listing!")
-        except:
-            message = "Something went wrong!"
-            send_message(message, chat)
+                raise Exception("Please enter a number that fit the provided listing!")
+        except Exception as e:
+            send_message(e, chat)
             return
     else:
         count = 0
@@ -206,25 +201,6 @@ def validate_option_usage(chat, text, tickers):
     else:
         return False
     return True
-
-
-# def validate_option_get(chat, text, tickers):
-#     if len(text) == 3:
-#         if not text[0] == "/OPTION":
-#             message = 'Option is not the first argument'
-#             send_message(message, chat)
-#             return False
-#         if not text[1] in tickers:
-#             message = 'Ticker is not in your list of pools'
-#             send_message(message, chat)
-#             return False
-#         if not text[2] == 'GET':
-#             message = 'Unknown option type'
-#             send_message(message, chat)
-#             return False
-#     else:
-#         return False
-#     return True
 
 
 def convert_option_value(value):
@@ -363,6 +339,20 @@ def handle_updates(updates):
                     continue
                 text = update["message"]["text"].upper()
                 chat = update["message"]["chat"]["id"]
+
+                # Do this temporarily because some users where not added to db.
+                if 'username' in update["message"]["from"]:
+                    name = update["message"]["from"]["username"]
+                    try:
+                        db.add_user(chat, name)
+                        print("New user added")
+                    except Exception as e:
+                        print('Assuming user is already added')
+                        try:
+                            db.update_username(chat, name)
+                        except Exception as e:
+                            print('Assuming user is already updated')
+
                 tickers = db.get_tickers_from_chat_id(chat)
                 if chat in options_string_builder:
                     handle_next_option_step(chat, text)
