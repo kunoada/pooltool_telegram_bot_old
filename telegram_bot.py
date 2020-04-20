@@ -24,7 +24,7 @@ sqs = boto3.client('sqs')
 queue_url = 'https://sqs.us-west-2.amazonaws.com/637019325511/pooltoolevents.fifo'
 
 options_string_builder = {}
-options = ['SEE OPTIONS', 'BLOCK_MINTED', 'BATTLE', 'SYNC_STATUS', 'BLOCK_ADJUSTMENT', 'STAKE_CHANGE', 'EPOCH_SUMMARY', 'SLOT_LOADED']
+options = ['See options', 'Block minted', 'Battle', 'Sync status', 'Block adjustment', 'Stake change', 'Epoch summary', 'Slot loaded', 'Back']
 
 lightning = '⚡'
 fire = '🔥'
@@ -112,18 +112,19 @@ def handle_help(chat):
               "*Options for each pool:*\n" \
               "You can enable/disable/silent each specific notification you want for each pool on your list\n" \
               "\n" \
-              "/OPTION \\[POOL TICKER]\n" \
+              "Enter: /OPTION\n" \
               "\n" \
-              "For more info about using option, enter /OPTION"
+              "*NOTE: This Bot is not case sensitive! text in upper- and lower case work!*"
     send_message(message, chat)
 
 
-def handle_option_help(chat):
-    message = "*Change or see current options for a pool:*\n" \
-              "\n" \
-              "Usage: /OPTION \\[POOL TICKER]\n" \
-              "Example: /OPTION KUNO"
-    send_message(message, chat)
+def handle_option_start(chat, tickers):
+    options_string_builder[chat] = {}
+    options_string_builder[chat]['string'] = ' '
+    options_string_builder[chat]['next'] = 'option_pool'
+    tickers.append('QUIT')
+    keyboard = build_keyboard(tickers)
+    send_message("Select pool", chat, keyboard)
 
 
 def on_ticker_valid(ticker, number, chat, pool_id):
@@ -174,33 +175,33 @@ def handle_new_ticker(text, chat):
         on_ticker_valid(text[0], 0, chat, pool_id)
 
 
-def validate_option_usage(chat, text, tickers):
-    if len(text) == 4:
-        if not text[0] == "/OPTION":
-            message = 'Option is not the first argument'
-            send_message(message, chat)
-            return False
-        if not text[1] in tickers:
-            message = 'Ticker is not in your list of pools'
-            send_message(message, chat)
-            return False
-        if not text[2] in options:
-            message = 'Unknown option type'
-            send_message(message, chat)
-            return False
-        try:
-            value = int(text[3])
-        except Exception as e:
-            message = 'Value is not a number'
-            send_message(message, chat)
-            return False
-        if not 0 <= value <= 1:
-            message = 'Value should be either, 0 or 1'
-            send_message(message, chat)
-            return False
-    else:
-        return False
-    return True
+# def validate_option_usage(chat, text, tickers):
+#     if len(text) == 4:
+#         if not text[0] == "/OPTION":
+#             message = 'Option is not the first argument'
+#             send_message(message, chat)
+#             return False
+#         if not text[1] in tickers:
+#             message = 'Ticker is not in your list of pools'
+#             send_message(message, chat)
+#             return False
+#         if not text[2] in options:
+#             message = 'Unknown option type'
+#             send_message(message, chat)
+#             return False
+#         try:
+#             value = int(text[3])
+#         except Exception as e:
+#             message = 'Value is not a number'
+#             send_message(message, chat)
+#             return False
+#         if not 0 <= value <= 1:
+#             message = 'Value should be either, 0 or 1'
+#             send_message(message, chat)
+#             return False
+#     else:
+#         return False
+#     return True
 
 
 def convert_option_value(value):
@@ -213,23 +214,24 @@ def convert_option_value(value):
 
 
 def get_current_options(chat, text):
-    if len(text) > 1:
-        options_string = f'\\[ {text[1]} ] Options:\n' \
+    if len(text):
+        options_string = f'\\[ {text[0]} ] Options:\n' \
                          f'\n' \
-                         f"block\\_minted: {convert_option_value(db.get_option(chat, text[1], 'block_minted'))}\n" \
-                         f"battle: {convert_option_value(db.get_option(chat, text[1], 'battle'))}\n" \
-                         f"sync\\_status: {convert_option_value(db.get_option(chat, text[1], 'sync_status'))}\n" \
-                         f"block\\_adjustment: {convert_option_value(db.get_option(chat, text[1], 'block_adjustment'))}\n" \
-                         f"stake\\_change: {convert_option_value(db.get_option(chat, text[1], 'stake_change'))}\n" \
-                         f"epoch\\_summary: {convert_option_value(db.get_option(chat, text[1], 'epoch_summary'))}\n" \
-                         f"slot\\_loaded: {convert_option_value(db.get_option(chat, text[1], 'slot_loaded'))}"
+                         f"block\\_minted: {convert_option_value(db.get_option(chat, text[0], 'block_minted'))}\n" \
+                         f"battle: {convert_option_value(db.get_option(chat, text[0], 'battle'))}\n" \
+                         f"sync\\_status: {convert_option_value(db.get_option(chat, text[0], 'sync_status'))}\n" \
+                         f"block\\_adjustment: {convert_option_value(db.get_option(chat, text[0], 'block_adjustment'))}\n" \
+                         f"stake\\_change: {convert_option_value(db.get_option(chat, text[0], 'stake_change'))}\n" \
+                         f"epoch\\_summary: {convert_option_value(db.get_option(chat, text[0], 'epoch_summary'))}\n" \
+                         f"slot\\_loaded: {convert_option_value(db.get_option(chat, text[0], 'slot_loaded'))}"
         return options_string
     return ''
 
 
 def validate_option_type(type):
-    if type in options:
-        return True
+    for option in options:
+        if type == option.upper():
+            return True
     return False
 
 
@@ -239,73 +241,70 @@ def send_option_type(chat):
 
 
 def validate_option_state(type):
-    states = ['ENABLE', 'DISABLE', 'SILENT']
+    states = ['ENABLE', 'DISABLE', 'SILENCE']
     if type in states:
         return True
     return False
 
 
 def send_option_state(chat):
-    states = ['ENABLE', 'DISABLE', 'SILENT']
+    states = ['Enable', 'Disable', 'Silence']
     keyboard = build_keyboard(states)
     send_message('Select new state', chat, keyboard)
 
 
-def handle_option(chat, text, tickers):
-    text = text.split(' ')
-    if text[0] == '/OPTION':
-        if len(text) == 2:
-            if text[1] in tickers:
-                options_string_builder[chat] = {}
-                options_string_builder[chat]['string'] = ' '.join(text)
-                options_string_builder[chat]['next'] = 'option_type'
-                send_option_type(chat)
-            else:
-                message = 'Ticker is not in your list of pools'
-                send_message(message, chat)
-        elif len(text) == 3:
-            ticker = ' '.join([text[1], text[2]])
-            if ticker in tickers:
-                options_string_builder[chat] = {}
-                options_string_builder[chat]['string'] = ' '.join(text)
-                options_string_builder[chat]['next'] = 'option_type'
-                send_option_type(chat)
-            else:
-                message = 'Ticker is not in your list of pools'
-                send_message(message, chat)
-        else:
-            message = "To many arguments!"
-            send_message(message, chat)
-
-
 def adjust_string_if_duplicate(text):
     list = text.split(' ')
-    if len(list) > 2:
-        if list[2].isdigit():  # Assuming we work with a duplicate ticker
+    if len(list) > 1:
+        if list[1].isdigit():  # Assuming we work with a duplicate ticker
             new_list = []
-            if len(list) == 4:
-                new_list.extend([list[0], ' '.join([list[1], list[2]]), list[3]])
-            elif len(list) == 5:
-                new_list.extend([list[0], ' '.join([list[1], list[2]]), list[3], list[4]])
+            if len(list) == 2:
+                new_list.extend([' '.join([list[0], list[1]])])
+            elif len(list) == 3:
+                new_list.extend([' '.join([list[0], list[1]]), list[2]])
             return new_list
     return list
 
 
-def update_option(chat, text):
-    db.update_option(chat, text[1], text[2], text[3])
+def update_option(chat, text, new_value):
+    db.update_option(chat, text[0], text[1], new_value)
 
 
-def handle_next_option_step(chat, text):
+def go_back_to_option_type(chat):
+    send_option_type(chat)
+    tmp_list = adjust_string_if_duplicate(options_string_builder[chat]['string'])
+    options_string_builder[chat]['string'] = tmp_list[0]
+    options_string_builder[chat]['next'] = 'option_type'
+
+
+def handle_next_option_step(chat, text, tickers):
     next_step = options_string_builder[chat]['next']
-    if next_step == 'option_type':
+    if next_step == 'option_pool':
+        if text in tickers:
+            send_option_type(chat)
+            options_string_builder[chat]['string'] = text
+            options_string_builder[chat]['next'] = 'option_type'
+        elif text == 'QUIT':
+            del options_string_builder[chat]
+            send_message("Options has been saved!", chat, remove_keyboard(True))
+            #TODO: Delete keyboard on client side!
+            return
+        else:
+            message = "Not a valid pool, try again!"
+            send_message(message, chat)
+            handle_option_start(chat, tickers)
+    elif next_step == 'option_type':
         if validate_option_type(text):
             if text == 'SEE OPTIONS':
                 message = get_current_options(chat, adjust_string_if_duplicate(options_string_builder[chat]['string']))
                 if not message == '':
-                    send_message(message, chat, remove_keyboard(True))
-                del options_string_builder[chat]
+                    send_message(message, chat)
+                go_back_to_option_type(chat)
                 return
-            options_string_builder[chat]['string'] = ' '.join([options_string_builder[chat]['string'], text])
+            elif text == 'BACK':
+                handle_option_start(chat, tickers)
+                return
+            options_string_builder[chat]['string'] = ' '.join([options_string_builder[chat]['string'], text.replace(' ', '_')])
             options_string_builder[chat]['next'] = 'option_state'
             send_option_state(chat)
         else:
@@ -315,15 +314,18 @@ def handle_next_option_step(chat, text):
     elif next_step == 'option_state':
         if validate_option_state(text):
             if text == 'ENABLE':
-                options_string_builder[chat]['string'] = ' '.join([options_string_builder[chat]['string'], '1'])
+                # options_string_builder[chat]['string'] = ' '.join([options_string_builder[chat]['string'], '1'])
+                update_option(chat, adjust_string_if_duplicate(options_string_builder[chat]['string']), 1)
             elif text == 'DISABLE':
-                options_string_builder[chat]['string'] = ' '.join([options_string_builder[chat]['string'], '0'])
-            elif text == 'SILENT':
-                options_string_builder[chat]['string'] = ' '.join([options_string_builder[chat]['string'], '2'])
-            update_option(chat, adjust_string_if_duplicate(options_string_builder[chat]['string']))
+                # options_string_builder[chat]['string'] = ' '.join([options_string_builder[chat]['string'], '0'])
+                update_option(chat, adjust_string_if_duplicate(options_string_builder[chat]['string']), 0)
+            elif text == 'SILENCE':
+                # options_string_builder[chat]['string'] = ' '.join([options_string_builder[chat]['string'], '2'])
+                update_option(chat, adjust_string_if_duplicate(options_string_builder[chat]['string']), 2)
             message = get_current_options(chat, adjust_string_if_duplicate(options_string_builder[chat]['string']))
             send_message(message, chat)
-            del options_string_builder[chat]
+            go_back_to_option_type(chat)
+            # del options_string_builder[chat]
         else:
             message = "Not a possible option state, try again!"
             send_message(message, chat)
@@ -355,7 +357,7 @@ def handle_updates(updates):
 
                 tickers = db.get_tickers_from_chat_id(chat)
                 if chat in options_string_builder:
-                    handle_next_option_step(chat, text)
+                    handle_next_option_step(chat, text, tickers)
                     continue
                 if text == "/DELETE":
                     if not tickers:
@@ -378,12 +380,11 @@ def handle_updates(updates):
                             print('Assuming user is already added')
                 elif text == "/HELP":
                     handle_help(chat)
-                elif "/OPTION" in text:
-                    if text == "/OPTION":
-                        handle_option_help(chat)
-                    else:
-                        handle_option(chat, text, tickers)
+                elif text == "/OPTION":
+                    handle_option_start(chat, tickers)
                 elif text.startswith("/"):
+                    message = "Unknown command, try /help"
+                    send_message(message, chat)
                     continue
                 elif text in tickers:
                     db.delete_user_pool(chat, text)
@@ -405,13 +406,28 @@ def get_last_chat_id_and_text(updates):
 
 
 def build_keyboard(items):
+    keyboard = []
+    columns = 2
+    tmp = []
+    for i in items:
+        tmp.append(i)
+        if columns / len(tmp) == 1:
+            keyboard.append(tmp)
+            tmp = []
+    if tmp:
+        keyboard.append(tmp)
+    reply_markup = {"keyboard": keyboard, "one_time_keyboard": True}
+    return json.dumps(reply_markup)
+
+
+def build_keyboard_old(items):
     keyboard = [[item] for item in items]
     reply_markup = {"keyboard": keyboard, "one_time_keyboard": True}
     return json.dumps(reply_markup)
 
 
 def remove_keyboard(boolean):
-    remove_keyboard_reply = {"RemoveKeyboard": boolean}
+    remove_keyboard_reply = {"remove_keyboard": boolean}
     return json.dumps(remove_keyboard_reply)
 
 
@@ -890,19 +906,19 @@ def main():
     db.setup()
 
     updates_handler = threading.Thread(target=start_telegram_update_handler)
-    notifier = threading.Thread(target=start_telegram_notifier)
+    # notifier = threading.Thread(target=start_telegram_notifier)
 
     updates_handler.start()
-    notifier.start()
+    # notifier.start()
 
     while True:
         if not updates_handler.is_alive():
             updates_handler = threading.Thread(target=start_telegram_update_handler)
             updates_handler.start()
-        if not notifier.is_alive():
-            notifier = threading.Thread(target=start_telegram_notifier)
-            notifier.start()
-        time.sleep(5*60)
+        # if not notifier.is_alive():
+        #     notifier = threading.Thread(target=start_telegram_notifier)
+        #     notifier.start()
+        # time.sleep(5*60)
 
 
 if __name__ == '__main__':
