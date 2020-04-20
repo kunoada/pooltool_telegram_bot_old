@@ -129,7 +129,10 @@ def handle_option_start(chat, tickers):
 
 def on_ticker_valid(ticker, number, chat, pool_id):
     db.add_new_pool(pool_id[number], ticker)
-    db.add_new_user_pool(chat, pool_id[number], ticker)
+    try:
+        db.add_new_user_pool(chat, pool_id[number], ticker)
+    except:
+        print(f"Something went wrong trying to add ticker {ticker}, {number}, {pool_id}")
     tickers = db.get_tickers_from_chat_id(chat)
     message = "List of pools you watch:\n\n" + "\n".join(tickers)
     send_message(message, chat)
@@ -909,18 +912,18 @@ def main():
     db.setup()
 
     updates_handler = threading.Thread(target=start_telegram_update_handler)
-    notifier = threading.Thread(target=start_telegram_notifier)
+    # notifier = threading.Thread(target=start_telegram_notifier)
 
     updates_handler.start()
-    notifier.start()
+    # notifier.start()
 
     while True:
         if not updates_handler.is_alive():
             updates_handler = threading.Thread(target=start_telegram_update_handler)
             updates_handler.start()
-        if not notifier.is_alive():
-            notifier = threading.Thread(target=start_telegram_notifier)
-            notifier.start()
+        # if not notifier.is_alive():
+        #     notifier = threading.Thread(target=start_telegram_notifier)
+        #     notifier.start()
         time.sleep(5*60)
 
 
