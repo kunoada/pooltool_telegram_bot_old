@@ -472,7 +472,6 @@ def get_ticker_from_pool_id(pool_id):
 
 
 def get_new_ticker_file():
-    time.sleep(60)
     url_ticker = 'https://pooltool.s3-us-west-2.amazonaws.com/8e4d2a3/tickers.json'
     try:
         r = requests.get(url_ticker)
@@ -704,11 +703,15 @@ def handle_wallet_poolchange(data):
 
 
 def handle_wallet_newpool(data):
+    print("New pool!, opening tickers.json...")
     with open('tickers.json', 'w') as f:
         data = get_new_ticker_file()
+        print(f"request new ticker file, with data: {data}")
         if data != 'error':
             json.dump(data, f)
+            print("wiriting to file")
         with open('tickers_reverse.json', 'w') as reverse_f:
+            print("converting to reverse tickers file!")
             reverse_dic = {}
             for k, v in data['tickers'].items():
                 reverse_dic[v] = reverse_dic.get(v, [])
@@ -906,19 +909,19 @@ def main():
     db.setup()
 
     updates_handler = threading.Thread(target=start_telegram_update_handler)
-    # notifier = threading.Thread(target=start_telegram_notifier)
+    notifier = threading.Thread(target=start_telegram_notifier)
 
     updates_handler.start()
-    # notifier.start()
+    notifier.start()
 
     while True:
         if not updates_handler.is_alive():
             updates_handler = threading.Thread(target=start_telegram_update_handler)
             updates_handler.start()
-        # if not notifier.is_alive():
-        #     notifier = threading.Thread(target=start_telegram_notifier)
-        #     notifier.start()
-        # time.sleep(5*60)
+        if not notifier.is_alive():
+            notifier = threading.Thread(target=start_telegram_notifier)
+            notifier.start()
+        time.sleep(5*60)
 
 
 if __name__ == '__main__':
