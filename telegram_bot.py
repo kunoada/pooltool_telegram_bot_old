@@ -651,7 +651,10 @@ def handle_battle(data):
     def which_slot(players):
         slots = []
         for player in players:
-            slots.append(player['slot'])
+            if player['slot'] is not None:
+                slots.append(player['slot'])
+            else:
+                slots.append('UNKNOWN')
         return ' vs '.join(slots)
 
     players = data['players']
