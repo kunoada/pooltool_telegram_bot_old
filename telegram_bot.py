@@ -169,13 +169,17 @@ def handle_new_ticker(text, chat):
     pool_id = get_pool_id_from_ticker_file(text[0])
 
     if pool_id is None:
-        message = "This is not a valid TICKER!"
-        send_message(message, chat)
-        return
+        handle_wallet_newpool()
+        pool_id = get_pool_id_from_ticker_file(text[0])
+        if pool_id is None:
+            message = "This is not a valid TICKER!"
+            send_message(message, chat)
+            return
     elif len(pool_id) > 1:
         handle_duplicate_ticker(text, chat, pool_id)
-    else:
-        on_ticker_valid(text[0], 0, chat, pool_id)
+        return
+
+    on_ticker_valid(text[0], 0, chat, pool_id)
 
 
 # def validate_option_usage(chat, text, tickers):
