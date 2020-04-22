@@ -169,7 +169,7 @@ def handle_new_ticker(text, chat):
     pool_id = get_pool_id_from_ticker_file(text[0])
 
     if pool_id is None:
-        handle_wallet_newpool()
+        handle_wallet_newpool(None)
         pool_id = get_pool_id_from_ticker_file(text[0])
         if pool_id is None:
             message = "This is not a valid TICKER!"
