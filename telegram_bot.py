@@ -338,7 +338,7 @@ def handle_next_option_step(chat, text, tickers):
         else:
             message = "Not a possible option for threshold, try again!"
             send_message(message, chat)
-            send_option_state(chat)
+            send_option_stake_threshold(chat)
 
 
 def handle_updates(updates):
