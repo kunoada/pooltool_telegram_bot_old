@@ -24,7 +24,8 @@ sqs = boto3.client('sqs')
 queue_url = 'https://sqs.us-west-2.amazonaws.com/637019325511/pooltoolevents.fifo'
 
 options_string_builder = {}
-options = ['See options', 'Block minted', 'Battle', 'Sync status', 'Block adjustment', 'Stake change', 'Epoch summary', 'Slot loaded', 'Stake Change Threshold', 'Back']
+options = ['See options', 'Block minted', 'Battle', 'Sync status', 'Block adjustment', 'Stake change', 'Epoch summary',
+           'Slot loaded', 'Stake Change Threshold', 'Back']
 
 lightning = '⚡'
 fire = '🔥'
@@ -303,7 +304,8 @@ def handle_next_option_step(chat, text, tickers):
             else:
                 send_option_state(chat)
                 options_string_builder[chat]['next'] = 'option_state'
-            options_string_builder[chat]['string'] = ' '.join([options_string_builder[chat]['string'], text.replace(' ', '_')])
+            options_string_builder[chat]['string'] = ' '.join(
+                [options_string_builder[chat]['string'], text.replace(' ', '_')])
         else:
             message = "Not a possible option type, try again!"
             send_message(message, chat)
@@ -330,7 +332,8 @@ def handle_next_option_step(chat, text, tickers):
     elif next_step == 'option_threshold':
         if validate_option_threshold(text):
             print(convert_values_from_prefix(text))
-            update_option(chat, adjust_string_if_duplicate(options_string_builder[chat]['string']), convert_values_from_prefix(text))
+            update_option(chat, adjust_string_if_duplicate(options_string_builder[chat]['string']),
+                          convert_values_from_prefix(text))
             message = get_current_options(chat, adjust_string_if_duplicate(options_string_builder[chat]['string']))
             send_message(message, chat)
             go_back_to_option_type(chat)
@@ -689,7 +692,7 @@ def handle_battle(data):
                     message = f'\\[ {ticker} ] You won! {throphy}\n' \
                               f'\n' \
                               f'{swords}{battle_type} battle: {competitors}\n' \
-                              f'{clock} Slot: {slots}\n'\
+                              f'{clock} Slot: {slots}\n' \
                               f'{brick} Height: {height}\n' \
                               f'\n' \
                               f'https://pooltool.io/competitive'
@@ -706,7 +709,7 @@ def handle_battle(data):
                     message = f'\\[ {ticker} ] You lost! {annoyed}\n' \
                               f'\n' \
                               f'{swords} {battle_type} battle: {competitors}\n' \
-                              f'{clock} Slot: {slots}\n'\
+                              f'{clock} Slot: {slots}\n' \
                               f'{brick} Height: {height}\n' \
                               f'\n' \
                               f'https://pooltool.io/competitive'
@@ -775,7 +778,8 @@ def handle_stake_change(data):
             message_type = db.get_option(chat_id, ticker, 'stake_change')
             if message_type:
                 threshold = db.get_option(chat_id, ticker, 'stake_change_threshold')
-                check_delegation_changes(chat_id, ticker, data['old_stake'] / 1000000, data['livestake'] / 1000000, message_type, threshold)
+                check_delegation_changes(chat_id, ticker, data['old_stake'] / 1000000, data['livestake'] / 1000000,
+                                         message_type, threshold)
 
 
 def handle_block_adjustment(data):
@@ -831,8 +835,11 @@ def handle_epoch_summary(data):
     losses = data['l']
     blocks_minted = int(data['blocks'])
     epoch_slots = data['epochSlots']
+    if isinstance(epoch_slots, str):
+        epoch_slots = int(epoch_slots)
     if epoch_slots:
-        print(f'blocks_minted: {blocks_minted}, type: {type(blocks_minted)} - epochSlots: {epoch_slots}, type: {type(epoch_slots)}, star: {blocks_minted == epoch_slots}')
+        print(
+            f'blocks_minted: {blocks_minted}, type: {type(blocks_minted)} - epochSlots: {epoch_slots}, type: {type(epoch_slots)}, star: {blocks_minted == epoch_slots}')
         if blocks_minted == epoch_slots and epoch_slots > 0:
             blocks_created_text = f'/{epoch_slots} {star}'
         else:
@@ -942,7 +949,7 @@ def main():
         if not notifier.is_alive():
             notifier = threading.Thread(target=start_telegram_notifier)
             notifier.start()
-        time.sleep(5*60)
+        time.sleep(5 * 60)
 
 
 if __name__ == '__main__':
