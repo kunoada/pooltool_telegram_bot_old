@@ -37,9 +37,14 @@ class DBHelper:
             print("Assuming db is already migrated")
 
         try:
-            self.new_columns()
+            self.new_userpool_columns()
         except Exception as err:
             print("Assuming new columns is already migrated")
+
+        try:
+            self.new_userpool_column_threshold()
+        except Exception as err:
+            print("Assuming threshold columns is already migrated")
 
     def get_chat_ids(self):
         stmt = "SELECT chat_id FROM users"
@@ -122,10 +127,20 @@ class DBHelper:
 
         self.conn.commit()
 
-    def new_columns(self):
+    def new_userpool_columns(self):
         stmt = "ALTER TABLE user_pool ADD epoch_summary INTEGER DEFAULT 1"
         self.conn.execute(stmt)
         stmt = "ALTER TABLE user_pool ADD slot_loaded INTEGER DEFAULT 1"
+        self.conn.execute(stmt)
+        self.conn.commit()
+
+    def new_userpool_column_threshold(self):
+        stmt = "ALTER TABLE user_pool ADD stake_change_threshold INTEGER DEFAULT 0"
+        self.conn.execute(stmt)
+        self.conn.commit()
+
+    def new_user_columns(self):
+        stmt = "ALTER TABLE users ADD string_builder TEXT"
         self.conn.execute(stmt)
         self.conn.commit()
 

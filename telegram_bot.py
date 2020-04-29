@@ -24,7 +24,7 @@ sqs = boto3.client('sqs')
 queue_url = 'https://sqs.us-west-2.amazonaws.com/637019325511/pooltoolevents.fifo'
 
 options_string_builder = {}
-options = ['See options', 'Block minted', 'Battle', 'Sync status', 'Block adjustment', 'Stake change', 'Epoch summary', 'Slot loaded', 'Back']
+options = ['See options', 'Block minted', 'Battle', 'Sync status', 'Block adjustment', 'Stake change', 'Epoch summary', 'Slot loaded', 'Stake Change Threshold', 'Back']
 
 lightning = '⚡'
 fire = '🔥'
@@ -182,35 +182,6 @@ def handle_new_ticker(text, chat):
     on_ticker_valid(text[0], 0, chat, pool_id)
 
 
-# def validate_option_usage(chat, text, tickers):
-#     if len(text) == 4:
-#         if not text[0] == "/OPTION":
-#             message = 'Option is not the first argument'
-#             send_message(message, chat)
-#             return False
-#         if not text[1] in tickers:
-#             message = 'Ticker is not in your list of pools'
-#             send_message(message, chat)
-#             return False
-#         if not text[2] in options:
-#             message = 'Unknown option type'
-#             send_message(message, chat)
-#             return False
-#         try:
-#             value = int(text[3])
-#         except Exception as e:
-#             message = 'Value is not a number'
-#             send_message(message, chat)
-#             return False
-#         if not 0 <= value <= 1:
-#             message = 'Value should be either, 0 or 1'
-#             send_message(message, chat)
-#             return False
-#     else:
-#         return False
-#     return True
-
-
 def convert_option_value(value):
     if value == 1:
         return 'On'
@@ -224,13 +195,14 @@ def get_current_options(chat, text):
     if len(text):
         options_string = f'\\[ {text[0]} ] Options:\n' \
                          f'\n' \
-                         f"block\\_minted: {convert_option_value(db.get_option(chat, text[0], 'block_minted'))}\n" \
-                         f"battle: {convert_option_value(db.get_option(chat, text[0], 'battle'))}\n" \
-                         f"sync\\_status: {convert_option_value(db.get_option(chat, text[0], 'sync_status'))}\n" \
-                         f"block\\_adjustment: {convert_option_value(db.get_option(chat, text[0], 'block_adjustment'))}\n" \
-                         f"stake\\_change: {convert_option_value(db.get_option(chat, text[0], 'stake_change'))}\n" \
-                         f"epoch\\_summary: {convert_option_value(db.get_option(chat, text[0], 'epoch_summary'))}\n" \
-                         f"slot\\_loaded: {convert_option_value(db.get_option(chat, text[0], 'slot_loaded'))}"
+                         f"Block minted: {convert_option_value(db.get_option(chat, text[0], 'block_minted'))}\n" \
+                         f"Battle: {convert_option_value(db.get_option(chat, text[0], 'battle'))}\n" \
+                         f"Sync status: {convert_option_value(db.get_option(chat, text[0], 'sync_status'))}\n" \
+                         f"Block adjustment: {convert_option_value(db.get_option(chat, text[0], 'block_adjustment'))}\n" \
+                         f"Stake change: {convert_option_value(db.get_option(chat, text[0], 'stake_change'))}\n" \
+                         f"Epoch summary: {convert_option_value(db.get_option(chat, text[0], 'epoch_summary'))}\n" \
+                         f"Slot loaded: {convert_option_value(db.get_option(chat, text[0], 'slot_loaded'))}\n" \
+                         f"Stake Change Threshold: {set_prefix(db.get_option(chat, text[0], 'stake_change_threshold'))}"
         return options_string
     return ''
 
@@ -254,10 +226,25 @@ def validate_option_state(type):
     return False
 
 
+def validate_option_threshold(type):
+    if type == '0':
+        return True
+    elif type in [set_prefix(x).upper() for x in [1000, 10000, 100000, 1000000, 10000000]]:
+        return True
+    return False
+
+
 def send_option_state(chat):
     states = ['Enable', 'Disable', 'Silence']
     keyboard = build_keyboard(states)
     send_message('Select new state', chat, keyboard)
+
+
+def send_option_stake_threshold(chat):
+    thresholds = [set_prefix(x) for x in [1000, 10000, 100000, 1000000, 10000000]]
+    thresholds.insert(0, '0')
+    keyboard = build_keyboard(thresholds)
+    send_message('Select new threshold', chat, keyboard)
 
 
 def adjust_string_if_duplicate(text):
@@ -294,7 +281,6 @@ def handle_next_option_step(chat, text, tickers):
         elif text == 'QUIT':
             del options_string_builder[chat]
             send_message("Options has been saved!", chat, remove_keyboard(True))
-            #TODO: Delete keyboard on client side!
             return
         else:
             message = "Not a valid pool, try again!"
@@ -311,9 +297,13 @@ def handle_next_option_step(chat, text, tickers):
             elif text == 'BACK':
                 handle_option_start(chat, tickers)
                 return
+            elif text == 'Stake Change Threshold'.upper():
+                send_option_stake_threshold(chat)
+                options_string_builder[chat]['next'] = 'option_threshold'
+            else:
+                send_option_state(chat)
+                options_string_builder[chat]['next'] = 'option_state'
             options_string_builder[chat]['string'] = ' '.join([options_string_builder[chat]['string'], text.replace(' ', '_')])
-            options_string_builder[chat]['next'] = 'option_state'
-            send_option_state(chat)
         else:
             message = "Not a possible option type, try again!"
             send_message(message, chat)
@@ -335,6 +325,18 @@ def handle_next_option_step(chat, text, tickers):
             # del options_string_builder[chat]
         else:
             message = "Not a possible option state, try again!"
+            send_message(message, chat)
+            send_option_state(chat)
+    elif next_step == 'option_threshold':
+        if validate_option_threshold(text):
+            print(convert_values_from_prefix(text))
+            update_option(chat, adjust_string_if_duplicate(options_string_builder[chat]['string']), convert_values_from_prefix(text))
+            message = get_current_options(chat, adjust_string_if_duplicate(options_string_builder[chat]['string']))
+            send_message(message, chat)
+            go_back_to_option_type(chat)
+            # del options_string_builder[chat]
+        else:
+            message = "Not a possible option for threshold, try again!"
             send_message(message, chat)
             send_option_state(chat)
 
@@ -575,7 +577,18 @@ def set_prefix(number):
         return si_format(number, precision=2)
 
 
-def check_delegation_changes(chat_id, ticker, delegations, new_delegations, message_type):
+def convert_values_from_prefix(value):
+    if value[len(value) - 1] == 'K':
+        return int(value.split('.')[0]) * 1000
+    elif value[len(value) - 1] == 'M':
+        return int(value.split('.')[0]) * 1000000
+    else:
+        return 0
+
+
+def check_delegation_changes(chat_id, ticker, delegations, new_delegations, message_type, threshold):
+    if abs(delegations - new_delegations) < threshold:
+        return
     if delegations > new_delegations:
         message = f'\\[ {ticker} ] Stake decreased 💔\n' \
                   f'-{set_prefix(delegations - new_delegations)}\n' \
@@ -761,7 +774,8 @@ def handle_stake_change(data):
         for chat_id in chat_ids:
             message_type = db.get_option(chat_id, ticker, 'stake_change')
             if message_type:
-                check_delegation_changes(chat_id, ticker, data['old_stake'] / 1000000, data['livestake'] / 1000000, message_type)
+                threshold = db.get_option(chat_id, ticker, 'stake_change_threshold')
+                check_delegation_changes(chat_id, ticker, data['old_stake'] / 1000000, data['livestake'] / 1000000, message_type, threshold)
 
 
 def handle_block_adjustment(data):
@@ -916,18 +930,18 @@ def main():
     db.setup()
 
     updates_handler = threading.Thread(target=start_telegram_update_handler)
-    notifier = threading.Thread(target=start_telegram_notifier)
+    # notifier = threading.Thread(target=start_telegram_notifier)
 
     updates_handler.start()
-    notifier.start()
+    # notifier.start()
 
     while True:
         if not updates_handler.is_alive():
             updates_handler = threading.Thread(target=start_telegram_update_handler)
             updates_handler.start()
-        if not notifier.is_alive():
-            notifier = threading.Thread(target=start_telegram_notifier)
-            notifier.start()
+        # if not notifier.is_alive():
+        #     notifier = threading.Thread(target=start_telegram_notifier)
+        #     notifier.start()
         time.sleep(5*60)
 
 
