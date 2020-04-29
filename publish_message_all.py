@@ -24,7 +24,7 @@ def send_message(text, chat_id, reply_markup=None):
     get_url(url)
 
 
-message = ''
+message = '🌐NEW FEATURE!🌐'
 
 db = DBHelper()
 
