@@ -713,15 +713,11 @@ def handle_wallet_poolchange(data):
 
 
 def handle_wallet_newpool(data):
-    print("New pool!, opening tickers.json...")
     with open('tickers.json', 'w') as f:
         data = get_new_ticker_file()
-        print(f"request new ticker file, with data: {data}")
         if data != 'error':
             json.dump(data, f)
-            print("wiriting to file")
         with open('tickers_reverse.json', 'w') as reverse_f:
-            print("converting to reverse tickers file!")
             reverse_dic = {}
             for k, v in data['tickers'].items():
                 reverse_dic[v] = reverse_dic.get(v, [])
@@ -822,6 +818,7 @@ def handle_epoch_summary(data):
     blocks_minted = int(data['blocks'])
     epoch_slots = data['epochSlots']
     if epoch_slots:
+        print(f'blocks_minted: {blocks_minted}, type: {type(blocks_minted)} - epochSlots: {epoch_slots}, type: {type(epoch_slots)}, star: {blocks_minted == epoch_slots}')
         if blocks_minted == epoch_slots and epoch_slots > 0:
             blocks_created_text = f'/{epoch_slots} {star}'
         else:
