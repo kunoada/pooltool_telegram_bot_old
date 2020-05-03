@@ -149,7 +149,8 @@ def handle_duplicate_ticker(text, chat, pool_id):
             else:
                 raise Exception("Please enter a number that fit the provided listing!")
         except Exception as e:
-            send_message(e, chat)
+            message = "Please enter a valid ticker"
+            send_message(message, chat)
             return
     else:
         count = 0
@@ -937,18 +938,18 @@ def main():
     db.setup()
 
     updates_handler = threading.Thread(target=start_telegram_update_handler)
-    notifier = threading.Thread(target=start_telegram_notifier)
+    # notifier = threading.Thread(target=start_telegram_notifier)
 
     updates_handler.start()
-    notifier.start()
+    # notifier.start()
 
     while True:
         if not updates_handler.is_alive():
             updates_handler = threading.Thread(target=start_telegram_update_handler)
             updates_handler.start()
-        if not notifier.is_alive():
-            notifier = threading.Thread(target=start_telegram_notifier)
-            notifier.start()
+        # if not notifier.is_alive():
+        #     notifier = threading.Thread(target=start_telegram_notifier)
+        #     notifier.start()
         time.sleep(5 * 60)
 
 
