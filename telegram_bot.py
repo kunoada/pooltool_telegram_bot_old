@@ -784,6 +784,8 @@ def handle_stake_change(data):
 
 
 def handle_block_adjustment(data):
+    if data['old_epoch_blocks'] == data['new_epoch_blocks']:
+        return
     pool_id = data['pool']
     chat_ids = db.get_chat_ids_from_pool_id(pool_id)
     current_epoch = get_current_epoch()
