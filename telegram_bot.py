@@ -49,6 +49,7 @@ arrowDown = '🔻'
 arrowUp = '🔺'
 star = '⭐'
 dice = '🎲'
+crown = '👑'
 
 
 def get_url(url):
@@ -663,16 +664,19 @@ def handle_battle(data):
                     return 'Height'
         return 'Slot'
 
-    def who_battled(players):
+    def who_battled(players, winner):
         tickers = []
         for player in players:
-            tickers.append(get_ticker_from_pool_id(player['pool']))
+            if winner == player['pool']:
+                tickers.append(get_ticker_from_pool_id(player['pool']) + f'{crown}')
+            else:
+                tickers.append(get_ticker_from_pool_id(player['pool']))
         return ' vs '.join(tickers)
 
     def which_slot(players):
         slots = []
         for player in players:
-            if player['slot'] is not None:
+            if 'slot' in player and player['slot'] is not None:
                 slots.append(player['slot'])
             else:
                 slots.append('UNKNOWN')
@@ -681,7 +685,7 @@ def handle_battle(data):
     players = data['players']
     height = data['height']
     battle_type = what_battle_type(players)
-    competitors = who_battled(players)
+    competitors = who_battled(players, get_ticker_from_pool_id(data['winner']))
     slots = which_slot(players)
     for player in data['players']:
         if player['pool'] == data['winner']:
