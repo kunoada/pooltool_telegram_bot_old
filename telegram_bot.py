@@ -843,7 +843,15 @@ def handle_epoch_summary(data):
     blocks_minted = int(data['blocks'])
     epoch_slots = data['epochSlots']
     if isinstance(epoch_slots, str):
-        epoch_slots = int(epoch_slots)
+        try:
+            epoch_slots = int(epoch_slots)
+        except Exception as e:
+            print("Could not convert to int, trying float")
+        try:
+            epoch_slots = int(float(epoch_slots))
+        except Exception as e:
+            print("Could not convert to float either. Skipping...")
+            return
     if epoch_slots:
         print(
             f'blocks_minted: {blocks_minted}, type: {type(blocks_minted)} - epochSlots: {epoch_slots}, type: {type(epoch_slots)}, star: {blocks_minted == epoch_slots}')
