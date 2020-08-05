@@ -26,7 +26,7 @@ queue_url = 'https://sqs.us-west-2.amazonaws.com/637019325511/pooltoolevents.fif
 options_string_builder = {}
 options_old = ['See options', 'Block minted', 'Battle', 'Sync status', 'Block adjustment', 'Stake change', 'Epoch summary',
            'Slot loaded', 'Stake Change Threshold', 'Back']
-options = ['See options', 'Stake change', 'Stake Change Threshold', 'Back']
+options = ['See options', 'Block minted', 'Pool change', 'Stake change', 'Stake Change Threshold', 'Back']
 
 lightning = '⚡'
 fire = '🔥'
@@ -199,6 +199,8 @@ def get_current_options(chat, text):
     if len(text):
         options_string = f'\\[ {text[0]} ] Options:\n' \
                          f'\n' \
+                         f"Block minted: {convert_option_value(db.get_option(chat, text[0], 'block_minted'))}\n" \
+                         f"Pool change: {convert_option_value(db.get_option(chat, text[0], 'pool_change'))}\n" \
                          f"Stake change: {convert_option_value(db.get_option(chat, text[0], 'stake_change'))}\n" \
                          f"Stake Change Threshold: {set_prefix(db.get_option(chat, text[0], 'stake_change_threshold'))}"
         return options_string
@@ -736,12 +738,39 @@ def handle_battle(data):
 
 
 def handle_wallet_poolchange(data):
-    with open('wallet_poolchange', 'w') as f:
-        f.write(json.dumps(data))
     pool_id = data['pool']
+    ticker = db.get_ticker_from_pool_id(pool_id)[0]
+    chat_ids = db.get_chat_ids_from_pool_id(pool_id)
     if 'ticker' in data['change']:
         new_ticker = data['change']['ticker']['new_value']
         db.update_ticker(pool_id, new_ticker)
+        message = f"\\[ {ticker} ] Pool change {warning} Ticker\n" \
+                  f"\n" \
+                  f"From: {data['change']['ticker']['old_value']}\n" \
+                  f"To: {data['change']['ticker']['new_value']}"
+    elif 'cost' in data['change']:
+        message = f"\\[ {ticker} ] Pool change {warning} Fixed cost\n" \
+                  f"\n" \
+                  f"From: {data['change']['cost']['old_value']}\n" \
+                  f"To: {data['change']['cost']['new_value']}"
+    elif 'margin' in data['change']:
+        message = f"\\[ {ticker} ] Pool change {warning} Margin\n" \
+                  f"\n" \
+                  f"From: {data['change']['margin']['old_value']}\n" \
+                  f"To: {data['change']['margin']['new_value']}"
+    elif 'pledge' in data['change']:
+        message = f"\\[ {ticker} ] Pool change {warning} Pledge\n" \
+                  f"\n" \
+                  f"From: {data['change']['pledge']['old_value']}\n" \
+                  f"To: {data['change']['pledge']['new_value']}"
+    for chat_id in chat_ids:
+        send_message(message, chat_id)
+        message_type = db.get_option(chat_id, ticker, 'pool_change')
+        if message_type:
+            if message_type == 2:
+                send_message(message, chat_id, silent=True)
+            else:
+                send_message(message, chat_id)
 
 
 def handle_wallet_newpool(data):
@@ -765,13 +794,33 @@ def handle_block_minted(data):
         f.write(json.dumps(data))
 
     pool_id = data['pool']
+    nbe = data['nb']
+    chat_ids = db.get_chat_ids_from_pool_id(pool_id)
+    ticker = db.get_ticker_from_pool_id(pool_id)[0]
+    for chat_id in chat_ids:
+        message_type = db.get_option(chat_id, ticker, 'block_minted')
+        if message_type:
+            message = f'\\[ {ticker} ] New block! {fire}\n' \
+                      f'\n' \
+                      f'{tools} Total blocks: {nbe}'
+            if message_type == 2:
+                send_message(message, chat_id, silent=True)
+            else:
+                send_message(message, chat_id)
+
+
+def handle_block_minted_old(data):
+    with open('block_minted', 'w') as f:
+        f.write(json.dumps(data))
+
+    pool_id = data['pool']
     nbe = data['nbe']
     height = data['height']
     epoch = data['epoch']
     slot = data['slot']
     chat_ids = db.get_chat_ids_from_pool_id(pool_id)
+    ticker = db.get_ticker_from_pool_id(pool_id)[0]
     for chat_id in chat_ids:
-        ticker = db.get_ticker_from_pool_id(pool_id)[0]
         message_type = db.get_option(chat_id, ticker, 'block_minted')
         if message_type:
             message = f'\\[ {ticker} ] New block! {fire}\n' \

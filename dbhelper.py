@@ -46,6 +46,11 @@ class DBHelper:
         except Exception as err:
             print("Assuming threshold columns is already migrated")
 
+        try:
+            self.new_userpool_poolchange_column_threshold()
+        except Exception as err:
+            print("Assuming poolchange columns is already migrated")
+
     def get_chat_ids(self):
         stmt = "SELECT chat_id FROM users"
         args = ()
@@ -147,6 +152,11 @@ class DBHelper:
 
     def new_userpool_column_threshold(self):
         stmt = "ALTER TABLE user_pool ADD stake_change_threshold INTEGER DEFAULT 0"
+        self.conn.execute(stmt)
+        self.conn.commit()
+
+    def new_userpool_poolchange_column_threshold(self):
+        stmt = "ALTER TABLE user_pool ADD pool_change INTEGER DEFAULT 0"
         self.conn.execute(stmt)
         self.conn.commit()
 
