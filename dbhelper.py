@@ -127,6 +127,17 @@ class DBHelper:
 
         self.conn.commit()
 
+    def update_poolid(self, new_pool_id, ticker):
+        stmt = f"UPDATE pools SET pool_id = (?) WHERE ticker = (?)"
+        args = (new_pool_id, ticker)
+        self.conn.execute(stmt, args)
+
+        stmt = f"UPDATE user_pool SET pool_id = (?) WHERE ticker = (?)"
+        args = (new_pool_id, ticker)
+        self.conn.execute(stmt, args)
+
+        self.conn.commit()
+
     def new_userpool_columns(self):
         stmt = "ALTER TABLE user_pool ADD epoch_summary INTEGER DEFAULT 1"
         self.conn.execute(stmt)

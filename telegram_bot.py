@@ -24,8 +24,9 @@ sqs = boto3.client('sqs')
 queue_url = 'https://sqs.us-west-2.amazonaws.com/637019325511/pooltoolevents.fifo'
 
 options_string_builder = {}
-options = ['See options', 'Block minted', 'Battle', 'Sync status', 'Block adjustment', 'Stake change', 'Epoch summary',
+options_old = ['See options', 'Block minted', 'Battle', 'Sync status', 'Block adjustment', 'Stake change', 'Epoch summary',
            'Slot loaded', 'Stake Change Threshold', 'Back']
+options = ['See options', 'Stake change', 'Stake Change Threshold', 'Back']
 
 lightning = '⚡'
 fire = '🔥'
@@ -198,6 +199,16 @@ def get_current_options(chat, text):
     if len(text):
         options_string = f'\\[ {text[0]} ] Options:\n' \
                          f'\n' \
+                         f"Stake change: {convert_option_value(db.get_option(chat, text[0], 'stake_change'))}\n" \
+                         f"Stake Change Threshold: {set_prefix(db.get_option(chat, text[0], 'stake_change_threshold'))}"
+        return options_string
+    return ''
+
+
+def get_current_options_old(chat, text):
+    if len(text):
+        options_string = f'\\[ {text[0]} ] Options:\n' \
+                         f'\n' \
                          f"Block minted: {convert_option_value(db.get_option(chat, text[0], 'block_minted'))}\n" \
                          f"Battle: {convert_option_value(db.get_option(chat, text[0], 'battle'))}\n" \
                          f"Sync status: {convert_option_value(db.get_option(chat, text[0], 'sync_status'))}\n" \
@@ -356,18 +367,18 @@ def handle_updates(updates):
                 text = update["message"]["text"].upper()
                 chat = update["message"]["chat"]["id"]
 
-                # Do this temporarily because some users where not added to db.
-                if 'username' in update["message"]["from"]:
-                    name = update["message"]["from"]["username"]
-                    try:
-                        db.add_user(chat, name)
-                        print("New user added")
-                    except Exception as e:
-                        print('Assuming user is already added')
-                        try:
-                            db.update_username(chat, name)
-                        except Exception as e:
-                            print('Assuming user is already updated')
+                # # Do this temporarily because some users where not added to db.
+                # if 'username' in update["message"]["from"]:
+                #     name = update["message"]["from"]["username"]
+                #     try:
+                #         db.add_user(chat, name)
+                #         print("New user added")
+                #     except Exception as e:
+                #         print('Assuming user is already added')
+                #         try:
+                #             db.update_username(chat, name)
+                #         except Exception as e:
+                #             print('Assuming user is already updated')
 
                 tickers = db.get_tickers_from_chat_id(chat)
                 if chat in options_string_builder:
@@ -486,7 +497,7 @@ def get_ticker_from_pool_id(pool_id):
 
 
 def get_new_ticker_file():
-    url_ticker = 'https://pooltool.s3-us-west-2.amazonaws.com/8e4d2a3/tickers.json'
+    url_ticker = 'https://s3-us-west-2.amazonaws.com/data.pooltool.io/stats/tickers.json'
     try:
         r = requests.get(url_ticker)
         if r.ok:
@@ -592,20 +603,20 @@ def convert_values_from_prefix(value):
 
 
 def check_delegation_changes(chat_id, ticker, delegations, new_delegations, message_type, threshold):
-    if abs(delegations - new_delegations) < threshold:
+    if abs(delegations - new_delegations) < threshold or abs(delegations - new_delegations) < 1:
         return
     if delegations > new_delegations:
         message = f'\\[ {ticker} ] Stake decreased 💔\n' \
-                  f'-{set_prefix(delegations - new_delegations)}\n' \
-                  f'Livestake: {set_prefix(new_delegations)}'
+                  f'-{set_prefix(round(delegations - new_delegations))}\n' \
+                  f'Livestake: {set_prefix(round(new_delegations))}'
         if message_type == 2:
             send_message(message, chat_id, silent=True)
         else:
             send_message(message, chat_id)
     elif delegations < new_delegations:
         message = f'\\[ {ticker} ] Stake increased 💚\n' \
-                  f'+{set_prefix(new_delegations - delegations)}\n' \
-                  f'Livestake: {set_prefix(new_delegations)}'
+                  f'+{set_prefix(round(new_delegations - delegations))}\n' \
+                  f'Livestake: {set_prefix(round(new_delegations))}'
         if message_type == 2:
             send_message(message, chat_id, silent=True)
         else:
@@ -740,9 +751,12 @@ def handle_wallet_newpool(data):
             json.dump(data, f)
         with open('tickers_reverse.json', 'w') as reverse_f:
             reverse_dic = {}
-            for k, v in data['tickers'].items():
-                reverse_dic[v] = reverse_dic.get(v, [])
-                reverse_dic[v].append(k)
+            for pool in data:
+                reverse_dic[data[pool]['ticker']] = reverse_dic.get(data[pool]['ticker'], [])
+                reverse_dic[data[pool]['ticker']].append(pool)
+            # for k, v in data['tickers'].items():
+            #     reverse_dic[v] = reverse_dic.get(v, [])
+            #     reverse_dic[v].append(k)
             json.dump(reverse_dic, reverse_f)
 
 
