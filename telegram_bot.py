@@ -741,6 +741,10 @@ def handle_battle(data):
 def handle_wallet_poolchange(data):
     pool_id = data['pool']
     chat_ids = db.get_chat_ids_from_pool_id(pool_id)
+    if chat_ids:
+        ticker = db.get_ticker_from_pool_id(pool_id)[0]
+    else:
+        return
     if 'ticker' in data['change']:
         new_ticker = data['change']['ticker']['new_value']
         db.update_ticker(pool_id, new_ticker)
@@ -764,7 +768,6 @@ def handle_wallet_poolchange(data):
                   f"From: {set_prefix(round(int(data['change']['pledge']['old_value']) / 1000000))} {ada}\n" \
                   f"To: {set_prefix(round(int(data['change']['pledge']['new_value']) / 1000000))} {ada}"
     for chat_id in chat_ids:
-        ticker = db.get_ticker_from_pool_id(pool_id)[0]
         send_message(message, chat_id)
         message_type = db.get_option(chat_id, ticker, 'pool_change')
         if message_type:
