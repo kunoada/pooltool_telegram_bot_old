@@ -796,8 +796,8 @@ def handle_block_minted(data):
     pool_id = data['pool']
     nbe = data['nb']
     chat_ids = db.get_chat_ids_from_pool_id(pool_id)
-    ticker = db.get_ticker_from_pool_id(pool_id)[0]
     for chat_id in chat_ids:
+        ticker = db.get_ticker_from_pool_id(pool_id)[0]
         message_type = db.get_option(chat_id, ticker, 'block_minted')
         if message_type:
             message = f'\\[ {ticker} ] New block! {fire}\n' \
