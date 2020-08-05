@@ -28,6 +28,7 @@ options_old = ['See options', 'Block minted', 'Battle', 'Sync status', 'Block ad
            'Slot loaded', 'Stake Change Threshold', 'Back']
 options = ['See options', 'Block minted', 'Pool change', 'Stake change', 'Stake Change Threshold', 'Back']
 
+ada = '₳'
 lightning = '⚡'
 fire = '🔥'
 moneyBag = '💰'
@@ -609,16 +610,16 @@ def check_delegation_changes(chat_id, ticker, delegations, new_delegations, mess
         return
     if delegations > new_delegations:
         message = f'\\[ {ticker} ] Stake decreased 💔\n' \
-                  f'-{set_prefix(round(delegations - new_delegations))}\n' \
-                  f'Livestake: {set_prefix(round(new_delegations))}'
+                  f'-{set_prefix(round(delegations - new_delegations))} {ada}\n' \
+                  f'Livestake: {set_prefix(round(new_delegations))} {ada}'
         if message_type == 2:
             send_message(message, chat_id, silent=True)
         else:
             send_message(message, chat_id)
     elif delegations < new_delegations:
         message = f'\\[ {ticker} ] Stake increased 💚\n' \
-                  f'+{set_prefix(round(new_delegations - delegations))}\n' \
-                  f'Livestake: {set_prefix(round(new_delegations))}'
+                  f'+{set_prefix(round(new_delegations - delegations))} {ada}\n' \
+                  f'Livestake: {set_prefix(round(new_delegations))} {ada}'
         if message_type == 2:
             send_message(message, chat_id, silent=True)
         else:
@@ -751,18 +752,18 @@ def handle_wallet_poolchange(data):
     elif 'cost' in data['change']:
         message = f"\\[ {ticker} ] Pool change {warning} Fixed cost\n" \
                   f"\n" \
-                  f"From: {data['change']['cost']['old_value']}\n" \
-                  f"To: {data['change']['cost']['new_value']}"
+                  f"From: {data['change']['cost']['old_value']} {ada}\n" \
+                  f"To: {data['change']['cost']['new_value']} {ada}"
     elif 'margin' in data['change']:
         message = f"\\[ {ticker} ] Pool change {warning} Margin\n" \
                   f"\n" \
-                  f"From: {data['change']['margin']['old_value']}\n" \
-                  f"To: {data['change']['margin']['new_value']}"
+                  f"From: {float(data['change']['margin']['old_value']) * 100}%\n" \
+                  f"To: {float(data['change']['margin']['new_value']) * 100}%"
     elif 'pledge' in data['change']:
         message = f"\\[ {ticker} ] Pool change {warning} Pledge\n" \
                   f"\n" \
-                  f"From: {data['change']['pledge']['old_value']}\n" \
-                  f"To: {data['change']['pledge']['new_value']}"
+                  f"From: {set_prefix(round(int(data['change']['pledge']['old_value']) / 1000000))} {ada}\n" \
+                  f"To: {set_prefix(round(int(data['change']['pledge']['new_value']) / 1000000))} {ada}"
     for chat_id in chat_ids:
         send_message(message, chat_id)
         message_type = db.get_option(chat_id, ticker, 'pool_change')
@@ -974,6 +975,17 @@ def handle_slot_loaded(data):
                 send_message(message, chat_id)
 
 
+def handle_announcement(data):
+    pool_id = data['poolid']
+    chat_ids = db.get_chat_ids_from_pool_id(pool_id)
+    for chat_id in chat_ids:
+        ticker = db.get_ticker_from_pool_id(pool_id)[0]
+        message = f'\\[ {ticker} ] Announcement {globe}\n' \
+                  f'\n' \
+                  f"{data['text']}"
+        send_message(message, chat_id)
+
+
 def start_telegram_notifier():
     while True:
         event = get_aws_event()
@@ -1007,6 +1019,10 @@ def start_telegram_notifier():
                 continue
             elif body['type'] == 'slots_loaded':
                 handle_slot_loaded(data)
+                continue
+            elif body['type'] == 'announcement':
+                handle_announcement(data)
+                continue
 
         time.sleep(0.5)
 
