@@ -976,7 +976,7 @@ def handle_slot_loaded(data):
 
 
 def handle_announcement(data):
-    pool_id = data['poolid']
+    pool_id = data['pool']
     chat_ids = db.get_chat_ids_from_pool_id(pool_id)
     for chat_id in chat_ids:
         ticker = db.get_ticker_from_pool_id(pool_id)[0]
