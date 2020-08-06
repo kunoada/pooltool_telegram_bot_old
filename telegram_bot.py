@@ -100,7 +100,7 @@ def handle_start(chat):
               "\n" \
               "For more information, enter \"/HELP\"\n" \
               "\n" \
-              "This pooltool bot was created for pooltool by KUNO stakepool\n" \
+              "This pooltool bot was created for pooltool by Kuno Heltborg [ETR] (Erik The Red)\n" \
               "\n" \
               "*NOTE: This Bot is not case sensitive! text in upper- and lower case work!*"
     send_message(message, chat)
