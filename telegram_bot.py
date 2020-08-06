@@ -100,7 +100,7 @@ def handle_start(chat):
               "\n" \
               "For more information, enter \"/HELP\"\n" \
               "\n" \
-              "This pooltool bot was created for pooltool by Kuno Heltborg [ETR] (Erik The Red)\n" \
+              "This pooltool bot was created for pooltool by Kuno Heltborg \[ETR] (Erik The Red)\n" \
               "\n" \
               "*NOTE: This Bot is not case sensitive! text in upper- and lower case work!*"
     send_message(message, chat)
@@ -785,8 +785,8 @@ def handle_wallet_newpool(data):
         with open('tickers_reverse.json', 'w') as reverse_f:
             reverse_dic = {}
             for pool in data:
-                reverse_dic[data[pool]['ticker']] = reverse_dic.get(data[pool]['ticker'], [])
-                reverse_dic[data[pool]['ticker']].append(pool)
+                reverse_dic[data[pool]['ticker'].upper()] = reverse_dic.get(data[pool]['ticker'].upper(), [])
+                reverse_dic[data[pool]['ticker'].upper()].append(pool)
             # for k, v in data['tickers'].items():
             #     reverse_dic[v] = reverse_dic.get(v, [])
             #     reverse_dic[v].append(k)
@@ -1034,18 +1034,18 @@ def main():
     db.setup()
 
     updates_handler = threading.Thread(target=start_telegram_update_handler)
-    notifier = threading.Thread(target=start_telegram_notifier)
+    # notifier = threading.Thread(target=start_telegram_notifier)
 
     updates_handler.start()
-    notifier.start()
+    # notifier.start()
 
     while True:
         if not updates_handler.is_alive():
             updates_handler = threading.Thread(target=start_telegram_update_handler)
             updates_handler.start()
-        if not notifier.is_alive():
-            notifier = threading.Thread(target=start_telegram_notifier)
-            notifier.start()
+        # if not notifier.is_alive():
+        #     notifier = threading.Thread(target=start_telegram_notifier)
+        #     notifier.start()
         time.sleep(5 * 60)
 
 
