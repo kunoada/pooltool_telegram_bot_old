@@ -156,7 +156,7 @@ class DBHelper:
         self.conn.commit()
 
     def new_userpool_poolchange_column_threshold(self):
-        stmt = "ALTER TABLE user_pool ADD pool_change INTEGER DEFAULT 0"
+        stmt = "ALTER TABLE user_pool ADD pool_change_new INTEGER DEFAULT 1"
         self.conn.execute(stmt)
         self.conn.commit()
 

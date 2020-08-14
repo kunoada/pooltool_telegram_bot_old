@@ -201,7 +201,7 @@ def get_current_options(chat, text):
         options_string = f'\\[ {text[0]} ] Options:\n' \
                          f'\n' \
                          f"Block minted: {convert_option_value(db.get_option(chat, text[0], 'block_minted'))}\n" \
-                         f"Pool change: {convert_option_value(db.get_option(chat, text[0], 'pool_change'))}\n" \
+                         f"Pool change: {convert_option_value(db.get_option(chat, text[0], 'pool_change_new'))}\n" \
                          f"Stake change: {convert_option_value(db.get_option(chat, text[0], 'stake_change'))}\n" \
                          f"Stake Change Threshold: {set_prefix(db.get_option(chat, text[0], 'stake_change_threshold'))}"
         return options_string
@@ -769,7 +769,7 @@ def handle_wallet_poolchange(data):
                   f"To: {set_prefix(round(int(data['change']['pledge']['new_value']) / 1000000))} {ada}"
     for chat_id in chat_ids:
         send_message(message, chat_id)
-        message_type = db.get_option(chat_id, ticker, 'pool_change')
+        message_type = db.get_option(chat_id, ticker, 'pool_change_new')
         if message_type:
             if message_type == 2:
                 send_message(message, chat_id, silent=True)

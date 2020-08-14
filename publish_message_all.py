@@ -26,9 +26,9 @@ def send_message(text, chat_id, reply_markup=None):
 
 message = '🌐Bug report!🌐\n' \
           '\n' \
-          'To all who follow a pool with duplicate ticker; please refollow\n' \
+          'To all who follow a pool with duplicate ticker; Please refollow!\n' \
           '\n' \
-          'Due to a bug the pool_ids got mixed'
+          'Due to a bug the pool ids got mixed, sorry for the inconvenience!'
 
 db = DBHelper()
 
