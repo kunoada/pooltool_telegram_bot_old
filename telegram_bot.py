@@ -52,6 +52,7 @@ arrowUp = '🔺'
 star = '⭐'
 dice = '🎲'
 crown = '👑'
+party = '🥳'
 
 
 def get_url(url):
@@ -753,20 +754,38 @@ def handle_wallet_poolchange(data):
                   f"From: {data['change']['ticker']['old_value']}\n" \
                   f"To: {data['change']['ticker']['new_value']}"
     elif 'cost' in data['change']:
-        message = f"\\[ {ticker} ] Pool change {warning} Fixed cost\n" \
-                  f"\n" \
-                  f"From: {data['change']['cost']['old_value']} {ada}\n" \
-                  f"To: {data['change']['cost']['new_value']} {ada}"
+        if int(data['change']['cost']['old_value']) < int(data['change']['cost']['new_value']):
+            message = f"\\[ {ticker} ] Pool change {warning} Fixed cost\n" \
+                      f"\n" \
+                      f"From: {data['change']['cost']['old_value']} {ada}\n" \
+                      f"To: {data['change']['cost']['new_value']} {ada}"
+        else:
+            message = f"\\[ {ticker} ] Pool change {party} Fixed cost\n" \
+                      f"\n" \
+                      f"From: {data['change']['cost']['old_value']} {ada}\n" \
+                      f"To: {data['change']['cost']['new_value']} {ada}"
     elif 'margin' in data['change']:
-        message = f"\\[ {ticker} ] Pool change {warning} Margin\n" \
-                  f"\n" \
-                  f"From: {float(data['change']['margin']['old_value']) * 100}%\n" \
-                  f"To: {float(data['change']['margin']['new_value']) * 100}%"
+        if float(data['change']['margin']['old_value']) < float(data['change']['margin']['new_value']):
+            message = f"\\[ {ticker} ] Pool change {warning} Margin\n" \
+                      f"\n" \
+                      f"From: {float(data['change']['margin']['old_value']) * 100}%\n" \
+                      f"To: {float(data['change']['margin']['new_value']) * 100}%"
+        else:
+            message = f"\\[ {ticker} ] Pool change {party} Margin\n" \
+                      f"\n" \
+                      f"From: {float(data['change']['margin']['old_value']) * 100}%\n" \
+                      f"To: {float(data['change']['margin']['new_value']) * 100}%"
     elif 'pledge' in data['change']:
-        message = f"\\[ {ticker} ] Pool change {warning} Pledge\n" \
-                  f"\n" \
-                  f"From: {set_prefix(round(int(data['change']['pledge']['old_value']) / 1000000))} {ada}\n" \
-                  f"To: {set_prefix(round(int(data['change']['pledge']['new_value']) / 1000000))} {ada}"
+        if int(data['change']['pledge']['old_value']) < int(data['change']['pledge']['new_value']):
+            message = f"\\[ {ticker} ] Pool change {party} Pledge\n" \
+                      f"\n" \
+                      f"From: {set_prefix(round(int(data['change']['pledge']['old_value']) / 1000000))} {ada}\n" \
+                      f"To: {set_prefix(round(int(data['change']['pledge']['new_value']) / 1000000))} {ada}"
+        else:
+            message = f"\\[ {ticker} ] Pool change {warning} Pledge\n" \
+                      f"\n" \
+                      f"From: {set_prefix(round(int(data['change']['pledge']['old_value']) / 1000000))} {ada}\n" \
+                      f"To: {set_prefix(round(int(data['change']['pledge']['new_value']) / 1000000))} {ada}"
     for chat_id in chat_ids:
         send_message(message, chat_id)
         message_type = db.get_option(chat_id, ticker, 'pool_change_new')
