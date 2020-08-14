@@ -180,7 +180,7 @@ def handle_new_ticker(text, chat):
             message = "This is not a valid TICKER!"
             send_message(message, chat)
             return
-    elif len(pool_id) > 1:
+    if len(pool_id) > 1:
         handle_duplicate_ticker(text, chat, pool_id)
         return
 
@@ -782,11 +782,25 @@ def handle_wallet_newpool(data):
         data = get_new_ticker_file()
         if data != 'error':
             json.dump(data, f)
+        with open('tickers_reverse.json', 'r') as ticker:
+            tickers = json.load(ticker)
         with open('tickers_reverse.json', 'w') as reverse_f:
             reverse_dic = {}
             for pool in data:
                 reverse_dic[data[pool]['ticker'].upper()] = reverse_dic.get(data[pool]['ticker'].upper(), [])
                 reverse_dic[data[pool]['ticker'].upper()].append(pool)
+
+            final_dic = {}
+            for ticker in reverse_dic:
+                if ticker not in tickers:
+                    tickers[ticker] = tickers.get(ticker, [])
+                    for pool_id in reverse_dic[ticker]:
+                        tickers[ticker].append(pool_id)
+                else:
+                    for pool_id in reverse_dic[ticker]:
+                        if pool_id not in tickers[ticker]:
+                            tickers[ticker].append(pool_id)
+
             # for k, v in data['tickers'].items():
             #     reverse_dic[v] = reverse_dic.get(v, [])
             #     reverse_dic[v].append(k)
@@ -1034,18 +1048,18 @@ def main():
     db.setup()
 
     updates_handler = threading.Thread(target=start_telegram_update_handler)
-    notifier = threading.Thread(target=start_telegram_notifier)
+    # notifier = threading.Thread(target=start_telegram_notifier)
 
     updates_handler.start()
-    notifier.start()
+    # notifier.start()
 
     while True:
         if not updates_handler.is_alive():
             updates_handler = threading.Thread(target=start_telegram_update_handler)
             updates_handler.start()
-        if not notifier.is_alive():
-            notifier = threading.Thread(target=start_telegram_notifier)
-            notifier.start()
+        # if not notifier.is_alive():
+        #     notifier = threading.Thread(target=start_telegram_notifier)
+        #     notifier.start()
         time.sleep(5 * 60)
 
 
