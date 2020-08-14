@@ -24,7 +24,11 @@ def send_message(text, chat_id, reply_markup=None):
     get_url(url)
 
 
-message = '🌐NEW FEATURE!🌐'
+message = '🌐Bug report!🌐\n' \
+          '\n' \
+          'To all who follow a pool with duplicate ticker; please refollow\n' \
+          '\n' \
+          'Due to a bug the pool_ids got mixed'
 
 db = DBHelper()
 
