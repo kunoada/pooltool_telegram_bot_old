@@ -823,7 +823,7 @@ def handle_wallet_newpool(data):
             # for k, v in data['tickers'].items():
             #     reverse_dic[v] = reverse_dic.get(v, [])
             #     reverse_dic[v].append(k)
-            json.dump(reverse_dic, reverse_f)
+            json.dump(tickers, reverse_f)
 
 
 def handle_block_minted(data):
