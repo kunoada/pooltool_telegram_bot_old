@@ -8,17 +8,16 @@ class DBHelper:
         self.conn = sqlite3.connect(dbname, check_same_thread=False)
 
     def setup(self):
-        tblstmt = "CREATE TABLE IF NOT EXISTS items (chat_id INTEGER, ticker TEXT, pool_id text, " \
-                  "delegations integer default 0 ,blocks_minted integer default 0)"
-        itemidx = "CREATE UNIQUE INDEX IF NOT EXISTS itemIndex ON items (chat_id,ticker)"
-        self.conn.execute(tblstmt)
-        self.conn.execute(itemidx)
+        # tblstmt = "CREATE TABLE IF NOT EXISTS items (chat_id INTEGER, ticker TEXT, pool_id text, " \
+        #           "delegations integer default 0 ,blocks_minted integer default 0)"
+        # itemidx = "CREATE UNIQUE INDEX IF NOT EXISTS itemIndex ON items (chat_id,ticker)"
+        # self.conn.execute(tblstmt)
+        # self.conn.execute(itemidx)
         
         tblstmt = "CREATE TABLE IF NOT EXISTS users (chat_id integer PRIMARY KEY, username text )"        
         self.conn.execute(tblstmt)
 
         tblstmt = "CREATE TABLE IF NOT EXISTS pools(pool_id , ticker TEXT," \
-                  "delegations integer default 0, blocks_minted integer default 0," \
                   "PRIMARY KEY (pool_id,ticker))"
         self.conn.execute(tblstmt)
         
@@ -156,7 +155,7 @@ class DBHelper:
         self.conn.commit()
 
     def new_userpool_poolchange_column_threshold(self):
-        stmt = "ALTER TABLE user_pool ADD pool_change_new INTEGER DEFAULT 1"
+        stmt = "ALTER TABLE user_pool ADD pool_change INTEGER DEFAULT 1"
         self.conn.execute(stmt)
         self.conn.commit()
 

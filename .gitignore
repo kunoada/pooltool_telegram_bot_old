@@ -15,3 +15,4 @@ block_minted
 fake_event.py
 send_tg_msg.py
 tickers_reverse.py
+tickers*
